@@ -4,3 +4,10 @@ numpy
 bs4
 lxml
 requests
+matplotlib
+scikit-learn
+distance
+seaborn
+sentence-transformers
+nltk
+scipy

@@ -1,3 +1,7 @@
 temp_data
 venv
 main.py
+.idea
+*.csv
+data
+__pycache__
