@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-df = pd.read_csv("smartwatch_apple.csv")
+df = pd.read_csv("data/smartwatch_samsung_2023_01_05 15_23_45.csv")
 
 df1 = df[df['source'] == "amazon"]
 df2 = df[df['source'] == "bol"]
