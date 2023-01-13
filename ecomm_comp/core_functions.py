@@ -84,7 +84,7 @@ def scrape_amazon(brand):
                 if temp.find("span", attrs={"class": "a-price-whole"}):
                     # For product price
                     for price in temp.find("span", attrs={"class": "a-price-whole"}):
-                        amazon_product_prices_list.append(price.get_text())
+                        amazon_product_prices_list.append(str(price))
                         amazon_product_source_list.append("amazon")
 
                     # For product name
@@ -93,7 +93,7 @@ def scrape_amazon(brand):
                             attrs={"class": "a-size-mini a-spacing-none a-color-base s-line-clamp-4"}
                     ):
                         # for product_name2 in product_name.find_all("h2"):
-                        amazon_product_names_list.append(product_name.get_text())
+                        amazon_product_names_list.append(str(product_name))
 
                     # For product link
                     for product_link in temp.find_all("a", attrs={"class": "a-link-normal s-no-outline"}):

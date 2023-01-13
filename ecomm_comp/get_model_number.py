@@ -1,8 +1,8 @@
 import pandas as pd
-import glob
+import glob, time
 import requests
-from bs4 import BeautifulSoup
-
+from bs4 import BeautifulSoup, Tag
+from selenium import webdriver
 # Pass headers
 # Sometimes, user agent versions give errors, try changing them if you face errors such as connection aborted
 my_headers = {
@@ -24,6 +24,49 @@ extension = 'csv'
 files = glob.glob(path + "/*." + extension)
 
 session = requests.Session()
+def get_div(tag,name):
+    for child in tag:
+        if child.name == name:
+            return child
+def get_dict_input(tag):
+    contents = get_div(tag,'span')
+    #initializaiton
+    title = 0
+    content = 0
+    for child in contents:
+        if type(child) == Tag:
+            if title == 0:
+                title = child
+            elif content == 0:
+                content = child
+        else:
+            #print(type(child))
+            b=2
+    title = title.string
+    stop = title.find(":")
+    title = title[:stop]
+    if "\n" in title:
+        words = title.split("\n")
+        title = words[0]
+    content = content.string
+    return {title : content}
+def handle_amazon(soup):
+    try:
+        div = soup.find(id="detailBullets_feature_div")
+        contents = get_div(div, 'div')
+        list = get_div(contents, 'div')
+        text = get_div(list, 'ul')
+        product_details = dict()
+        for detail in text.contents:
+            if type(detail) == Tag:
+                dict_slip = get_dict_input(detail)
+                product_details.update(dict_slip)
+        print(product_details)
+        return product_details
+    except:
+        raise Exception
+#driver = webdriver.Chrome()
+#driver.implicitly_wait(3)
 
 for filename in files:
     # If file(s) found
@@ -38,17 +81,31 @@ for filename in files:
             # Model number for now and up to 5 images as some model numbers have different last few digits.
             # So, we might have to compare model numbers and images to get the exact match
             # This step can be improved using multithreading
+            #driver.get(i)
+
             response = session.get(i, headers=my_headers)
             html_soup = BeautifulSoup(response.text, 'html.parser')
             soup = BeautifulSoup(str(html_soup), features='lxml')
             # For amazon
-            for model_no in soup.find_all(
-                    'ul',
-                    attrs={
-                        "class": "a-unordered-list a-nostyle a-vertical a-spacing-none detail-bullet-list"}
-            ):
-                print(model_no)
+            if "amazon" in i:
+                try:
+                    dict = handle_amazon(soup)
+                    time.sleep(1)
+                except:
+                    print("website didnt load it yet")
 
+
+                """
+                for model_no in soup.find_all(
+                        'ul',
+                        attrs={
+                            "class": "a-unordered-list a-nostyle a-vertical a-spacing-none detail-bullet-list"}
+                ):
+
+                    print(model_no)
+                    text = model_no.text.strip().replace('‏','').replace('‎','').split()
+                    b=2
+                    """
             # Once details are retrieved, update the same CSV file with the new details
 
     break

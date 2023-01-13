@@ -38,7 +38,7 @@ def scrape_data(brand_name=None):
 
 
 if __name__ == "__main__":
-    brand = ["apple"]
+    brand = ["samsung"]
 
     # Getting data
     for b in brand:
