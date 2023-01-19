@@ -1,6 +1,6 @@
 import pandas as pd
 import glob, time
-import requests
+import requests, copy
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -34,6 +34,7 @@ def get_div(tag,name):
     for child in tag:
         if child.name == name:
             return child
+    return None
 def get_dict_input(tag):
     contents = get_div(tag,'span')
     #initializaiton
@@ -68,7 +69,162 @@ def handle_amazon(soup):
                 product_details.update(dict_slip)
         print(product_details)
         return product_details
+def get_specs(driver,link):
+    driver.get(link)
+    try:
+        elem = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "detailBullets_feature_div"))
+        )
+    except:
+        print("No product details found")
+        return {}
+    b = 2
+    html_soup = BeautifulSoup(driver.page_source, 'html.parser')
+    soup = BeautifulSoup(str(html_soup), features='lxml')
+    # For amazon
+    if "amazon" in i:
+        try:
+            dictionary = handle_amazon(soup)
+        except:
+            b = 2
+            return {}
+            #dictionary = handle_amazon(soup)
+    else:
+        print("BOL NOT YET IMPLEMENTED")
+        return {}
+    return dictionary
+def get_child_Tag(element):
+    for child in element.contents:
+        if type(child) == Tag:
+            return child
+    return None
+def get_all_children_Tags(element):
+    tags=list()
+    for child in element.contents:
+        if type(child) == Tag:
+            tags.append(child)
+    return tags
+def get_all_child_by_name(element,name):
+    tags = list()
+    for child in element.contents:
+        if child.name == name:
+            tags.append(child)
+    return tags
+def get_all_lists(soup):
+    div = soup.find(id="twister_feature_div")
+    lists = div.find(id="twister-plus-inline-twister-container")
+    if lists:
+        deeper_lists = lists.find(id="twister-plus-inline-twister-card")
+        even_deeper = get_child_Tag(get_child_Tag(deeper_lists))
+        lists= get_all_children_Tags(even_deeper)
+        return lists
+    else:               # THE WEBSITES FOLLOWS PRETTY MUCH 3 STRUCTURES, FROM EXPERIENCE THIS COVERS ALL
+        deeper_lists = div.find(id="twister-plus-inline-twister")
+        if deeper_lists:
+            lists=get_all_children_Tags(deeper_lists)
+            return lists
+        else:
+            deeper_lists = div.find(id="twister")
 
+            return get_all_child_by_name(deeper_lists,'div')
+def get_all_clickables(l):
+    one_step = get_div(l,'div')
+    two_step = get_div(one_step,'div')
+    if two_step:
+        three_step = get_div(two_step,'div')
+        fourth_step = get_div(three_step,'ul')
+        fifth_step = get_all_children_Tags(fourth_step)
+        all_ids = list()
+        for i in fifth_step:
+            att = i.attrs
+            if 'data-asin' in att:
+                one_deep = get_div(i,'span')
+                two_deep = get_div(one_deep,'span')
+                all_ids.append(two_deep.get('id'))
+        return all_ids
+    else:
+        one_step = get_div(l,'ul')
+        two_step = get_all_children_Tags(one_step)
+        all_ids = list()
+        for tag in two_step:
+            all_ids.append(tag.get('id'))
+        return all_ids
+
+
+def get_all_link_combinations(driver,click_ids,num,max,past_clicks=list()):
+    main_links = set()
+    clicked = copy.copy(past_clicks)
+    if num<max:
+        option = click_ids[num]
+        for id in option:
+            button = driver.find_element('id',id)
+            clicked.append(button)
+            driver.execute_script("arguments[0].scrollIntoView();", button)
+            button.click()
+            links_from_child = get_all_link_combinations(driver,click_ids,num+1,max,clicked)
+            main_links.update(links_from_child)
+        return main_links
+    else:
+        option = click_ids[max]
+        for id in option:
+            for past_button in clicked:
+                driver.execute_script("arguments[0].scrollIntoView();", past_button)
+                past_button.click()
+
+                """
+                The above step is quite crucial
+                example options
+                
+                GPS     GPS+LTE
+                
+                GOOD   BAD
+                
+                BLACK RED YELLOW
+                
+                
+                You go GPS -> Good -> colors
+                But Yellow is only available on GPS+LTE
+                After all colors, you click BAD and go all colors
+                But since you clicked yellow, GPS+LTE was clicked automatically by amazon
+                Therefore locking us out of GPS -> BAD -> BLACK, RED
+                """
+            button = driver.find_element('id', id)
+            driver.execute_script("arguments[0].scrollIntoView();", button)
+            button.click()
+            time.sleep(2.5)
+            url = str(driver.current_url)
+            main_links.add(url)
+        return main_links
+
+def get_all_links(driver,link):
+    driver.get(link)
+    driver.fullscreen_window()
+    try:
+        elem = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "twister_feature_div"))
+        )
+    except:
+        print("No extra links found")
+        return [link]
+    html_soup = BeautifulSoup(driver.page_source, 'html.parser')
+    soup = BeautifulSoup(str(html_soup), features='lxml')
+    lists = get_all_lists(soup)
+    click_ids=[]
+    for l in lists:
+        click_ids.append(get_all_clickables(l))
+    final_links = get_all_link_combinations(driver,click_ids,0,len(click_ids)-1)
+    print(len(final_links))
+
+
+
+
+
+    """
+   DIV IDS CONTAINIGN CHOCIES
+   
+   twister_feature_div  # SEEMS TO WORK FOR ALL
+    twister-plus-inline-twister  # THIS ONE ON OPERA
+    """
 #driver = webdriver.Chrome()
 #driver.implicitly_wait(3)
 for filename in files:
@@ -76,36 +232,18 @@ for filename in files:
     if filename:
         df = pd.read_csv(filename, index_col=None)
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-
+        driver.implicitly_wait(2)
         # Get the link column of the file(s)
         links = df.link
         for i in links:
             print(i)
-
+            if "amazon" in i:
+                get_all_links(driver,i)
             # Open the link in BS4 and get the details
             # Model number for now and up to 5 images as some model numbers have different last few digits.
             # So, we might have to compare model numbers and images to get the exact match
             # This step can be improved using multithreading
 
-
-            driver.get(i)
-            try:
-                elem = WebDriverWait(driver,10).until(
-                   EC.presence_of_element_located((By.ID, "detailBullets_feature_div"))
-                )
-            except:
-                print("No product details found")
-                continue
-            b=2
-            html_soup = BeautifulSoup(driver.page_source, 'html.parser')
-            soup = BeautifulSoup(str(html_soup), features='lxml')
-            # For amazon
-            if "amazon" in i:
-                try:
-                    dictionary = handle_amazon(soup)
-                except:
-                    b=2
-                    dictionary = handle_amazon(soup)
 
     break
 
