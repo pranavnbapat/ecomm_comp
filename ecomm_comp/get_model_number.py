@@ -3,7 +3,13 @@ import glob, time
 import requests
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 # Pass headers
+
 # Sometimes, user agent versions give errors, try changing them if you face errors such as connection aborted
 my_headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36",
@@ -51,7 +57,6 @@ def get_dict_input(tag):
     content = content.string
     return {title : content}
 def handle_amazon(soup):
-    try:
         div = soup.find(id="detailBullets_feature_div")
         contents = get_div(div, 'div')
         list = get_div(contents, 'div')
@@ -63,50 +68,44 @@ def handle_amazon(soup):
                 product_details.update(dict_slip)
         print(product_details)
         return product_details
-    except:
-        raise Exception
+
 #driver = webdriver.Chrome()
 #driver.implicitly_wait(3)
-
 for filename in files:
     # If file(s) found
     if filename:
         df = pd.read_csv(filename, index_col=None)
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
         # Get the link column of the file(s)
         links = df.link
         for i in links:
             print(i)
+
             # Open the link in BS4 and get the details
             # Model number for now and up to 5 images as some model numbers have different last few digits.
             # So, we might have to compare model numbers and images to get the exact match
             # This step can be improved using multithreading
-            #driver.get(i)
 
-            response = session.get(i, headers=my_headers)
-            html_soup = BeautifulSoup(response.text, 'html.parser')
+
+            driver.get(i)
+            try:
+                elem = WebDriverWait(driver,10).until(
+                   EC.presence_of_element_located((By.ID, "detailBullets_feature_div"))
+                )
+            except:
+                print("No product details found")
+                continue
+            b=2
+            html_soup = BeautifulSoup(driver.page_source, 'html.parser')
             soup = BeautifulSoup(str(html_soup), features='lxml')
             # For amazon
             if "amazon" in i:
                 try:
-                    dict = handle_amazon(soup)
-                    time.sleep(1)
+                    dictionary = handle_amazon(soup)
                 except:
-                    print("website didnt load it yet")
-
-
-                """
-                for model_no in soup.find_all(
-                        'ul',
-                        attrs={
-                            "class": "a-unordered-list a-nostyle a-vertical a-spacing-none detail-bullet-list"}
-                ):
-
-                    print(model_no)
-                    text = model_no.text.strip().replace('‏','').replace('‎','').split()
                     b=2
-                    """
-            # Once details are retrieved, update the same CSV file with the new details
+                    dictionary = handle_amazon(soup)
 
     break
 
