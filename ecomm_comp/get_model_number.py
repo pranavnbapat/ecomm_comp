@@ -30,13 +30,13 @@ extension = 'csv'
 files = glob.glob(path + "/*." + extension)
 
 session = requests.Session()
-def get_div(tag,name):
+def get_child(tag, name):
     for child in tag:
         if child.name == name:
             return child
     return None
 def get_dict_input(tag):
-    contents = get_div(tag,'span')
+    contents = get_child(tag, 'span')
     #initializaiton
     title = 0
     content = 0
@@ -59,17 +59,61 @@ def get_dict_input(tag):
     return {title : content}
 def handle_amazon(soup):
         div = soup.find(id="detailBullets_feature_div")
-        contents = get_div(div, 'div')
-        list = get_div(contents, 'div')
-        text = get_div(list, 'ul')
+        contents = get_child(div, 'div')
+        list = get_child(contents, 'div')
+        text = get_child(list, 'ul')
         product_details = dict()
         for detail in text.contents:
             if type(detail) == Tag:
                 dict_slip = get_dict_input(detail)
                 product_details.update(dict_slip)
-        print(product_details)
+       # print(product_details)
         return product_details
-def get_specs(driver,link):
+def handle_bol(driver,link):
+    driver.get(link)
+    try:
+        elem = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.ID, "js-first-screen-accept-all-button"))
+        )
+        elem.click()
+    except:
+        print("we in")
+    try:
+        elem = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "specs__list"))
+        )
+    except:
+        print("we in")
+    html_soup = BeautifulSoup(driver.page_source, 'html.parser')
+    soup = BeautifulSoup(str(html_soup), features='lxml')
+    mydivs = soup.find_all("div", {"class": "specs"})
+    main_list = False
+    for div in mydivs:
+        if "Productinformatie" in div.text:
+            main_list = div
+            break
+    if main_list:
+        list = get_child(main_list,"dl")
+        all_rows = get_all_children_Tags(list)
+        return get_specs_bol_from_rows(all_rows)
+    else:
+        print("Could not find product information for this one")
+    b=2
+    """
+    js-first-screen-accept-all-button"""
+def get_title_from_element_bol(elem):
+    text = str(elem.contents[0])
+    return text.strip()
+def get_specs_bol_from_rows(rows):
+    returner = {}
+    for r in rows:
+        title_elem = get_child(r,'dt')
+        value_elem = get_child(r,'dd')
+        title = get_title_from_element_bol(title_elem)
+        value = get_title_from_element_bol(value_elem)
+        returner[title] = value
+    return returner
+def get_specs_amazon(driver,link):
     driver.get(link)
     try:
         elem = WebDriverWait(driver, 10).until(
@@ -81,18 +125,14 @@ def get_specs(driver,link):
     b = 2
     html_soup = BeautifulSoup(driver.page_source, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')
-    # For amazon
-    if "amazon" in i:
-        try:
-            dictionary = handle_amazon(soup)
-        except:
-            b = 2
-            return {}
-            #dictionary = handle_amazon(soup)
-    else:
-        print("BOL NOT YET IMPLEMENTED")
+    try:
+        dictionary = handle_amazon(soup)
+        return dictionary
+    except:
+        b = 2
         return {}
-    return dictionary
+        #dictionary = handle_amazon(soup)
+
 def get_child_Tag(element):
     for child in element.contents:
         if type(child) == Tag:
@@ -128,22 +168,22 @@ def get_all_lists(soup):
 
             return get_all_child_by_name(deeper_lists,'div')
 def get_all_clickables(l):
-    one_step = get_div(l,'div')
-    two_step = get_div(one_step,'div')
+    one_step = get_child(l, 'div')
+    two_step = get_child(one_step, 'div')
     if two_step:
-        three_step = get_div(two_step,'div')
-        fourth_step = get_div(three_step,'ul')
+        three_step = get_child(two_step, 'div')
+        fourth_step = get_child(three_step, 'ul')
         fifth_step = get_all_children_Tags(fourth_step)
         all_ids = list()
         for i in fifth_step:
             att = i.attrs
             if 'data-asin' in att:
-                one_deep = get_div(i,'span')
-                two_deep = get_div(one_deep,'span')
+                one_deep = get_child(i, 'span')
+                two_deep = get_child(one_deep, 'span')
                 all_ids.append(two_deep.get('id'))
         return all_ids
     else:
-        one_step = get_div(l,'ul')
+        one_step = get_child(l, 'ul')
         two_step = get_all_children_Tags(one_step)
         all_ids = list()
         for tag in two_step:
@@ -235,10 +275,24 @@ for filename in files:
         driver.implicitly_wait(2)
         # Get the link column of the file(s)
         links = df.link
+        bol_model=[]
+        amazon_model=[]
         for i in links:
             print(i)
+            if i == "No link found":
+                continue
             if "amazon" in i:
-                get_all_links(driver,i)
+                specs = get_specs_amazon(driver,i)
+                if "Modelnummer item" in specs:
+                    amazon_model.append(specs.get("Modelnummer item"))
+                b=2
+            else:
+                specs = handle_bol(driver,i)
+                if "MPN (Manufacturer Part Number)" in specs:
+                    bol_model.append(specs.get("MPN (Manufacturer Part Number)"))
+                    #print(specs.get("MPN (Manufacturer Part Number)"))
+        match = [i for i in bol_model if i in amazon_model]
+        print(match)
             # Open the link in BS4 and get the details
             # Model number for now and up to 5 images as some model numbers have different last few digits.
             # So, we might have to compare model numbers and images to get the exact match
