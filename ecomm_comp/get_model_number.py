@@ -73,13 +73,6 @@ def handle_bol(driver,link):
     driver.get(link)
     try:
         elem = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.ID, "js-first-screen-accept-all-button"))
-        )
-        elem.click()
-    except:
-        print("we in")
-    try:
-        elem = WebDriverWait(driver, 2).until(
             EC.presence_of_element_located((By.CLASS_NAME, "specs__list"))
         )
     except:
@@ -165,8 +158,10 @@ def get_all_lists(soup):
             return lists
         else:
             deeper_lists = div.find(id="twister")
-
-            return get_all_child_by_name(deeper_lists,'div')
+            if deeper_lists:
+                return get_all_child_by_name(deeper_lists,'div')
+            else:
+                return False
 def get_all_clickables(l):
     one_step = get_child(l, 'div')
     two_step = get_child(one_step, 'div')
@@ -189,7 +184,14 @@ def get_all_clickables(l):
         for tag in two_step:
             all_ids.append(tag.get('id'))
         return all_ids
-
+def try_clicking(button,retry= 0):
+    if retry == 3:
+        return
+    else:
+        try:
+            button.click()
+        except:
+            try_clicking(button,retry+1)
 
 def get_all_link_combinations(driver,click_ids,num,max,past_clicks=list()):
     main_links = set()
@@ -199,8 +201,9 @@ def get_all_link_combinations(driver,click_ids,num,max,past_clicks=list()):
         for id in option:
             button = driver.find_element('id',id)
             clicked.append(button)
-            driver.execute_script("arguments[0].scrollIntoView();", button)
-            button.click()
+            #driver.execute_script("arguments[0].scrollIntoView();", button)
+            try_clicking(button)
+           # button.click()
             links_from_child = get_all_link_combinations(driver,click_ids,num+1,max,clicked)
             main_links.update(links_from_child)
         return main_links
@@ -208,8 +211,9 @@ def get_all_link_combinations(driver,click_ids,num,max,past_clicks=list()):
         option = click_ids[max]
         for id in option:
             for past_button in clicked:
-                driver.execute_script("arguments[0].scrollIntoView();", past_button)
-                past_button.click()
+               # driver.execute_script("arguments[0].scrollIntoView();", past_button)
+                try_clicking(past_button)
+                #past_button.click()
 
                 """
                 The above step is quite crucial
@@ -229,7 +233,7 @@ def get_all_link_combinations(driver,click_ids,num,max,past_clicks=list()):
                 Therefore locking us out of GPS -> BAD -> BLACK, RED
                 """
             button = driver.find_element('id', id)
-            driver.execute_script("arguments[0].scrollIntoView();", button)
+          #  driver.execute_script("arguments[0].scrollIntoView();", button)
             button.click()
             time.sleep(2.5)
             url = str(driver.current_url)
@@ -249,15 +253,25 @@ def get_all_links(driver,link):
     html_soup = BeautifulSoup(driver.page_source, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')
     lists = get_all_lists(soup)
+    if lists == False:
+        return [link]
     click_ids=[]
     for l in lists:
         click_ids.append(get_all_clickables(l))
     final_links = get_all_link_combinations(driver,click_ids,0,len(click_ids)-1)
     print(len(final_links))
+    return final_links
 
 
-
-
+def accept_cookie(driver,link,id):
+    driver.get(link)
+    try:
+        elem = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.ID, id))
+        )
+        elem.click()
+    except:
+        print("we in")
 
     """
    DIV IDS CONTAINIGN CHOCIES
@@ -265,6 +279,14 @@ def get_all_links(driver,link):
    twister_feature_div  # SEEMS TO WORK FOR ALL
     twister-plus-inline-twister  # THIS ONE ON OPERA
     """
+def accept_cookies_wrap(driver):
+    accept_cookie(driver,
+                  "https://www.amazon.nl/Samsung-Galaxy-Watch-Classic-Bluetooth/dp/B099SF8DWX/ref=sr_1_3?qid=1673621019&refinements=p_89%3Asamsung&s=electronics&sr=1-3",
+                  "sp-cc-accept")
+    accept_cookie(driver,
+                  "https://bol.com/nl/nl/p/samsung-galaxy-watch4-classic-smartwatch-zwart-staal-46mm/9300000108147961/",
+                  "js-first-screen-accept-all-button")
+
 #driver = webdriver.Chrome()
 #driver.implicitly_wait(3)
 for filename in files:
@@ -273,6 +295,8 @@ for filename in files:
         df = pd.read_csv(filename, index_col=None)
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
         driver.implicitly_wait(2)
+        accept_cookies_wrap(driver)
+
         # Get the link column of the file(s)
         links = df.link
         bol_model=[]
@@ -282,17 +306,30 @@ for filename in files:
             if i == "No link found":
                 continue
             if "amazon" in i:
-                specs = get_specs_amazon(driver,i)
-                if "Modelnummer item" in specs:
-                    amazon_model.append(specs.get("Modelnummer item"))
-                b=2
-            else:
+                try:
+                    all_links = get_all_links(driver,i)
+                    for l in all_links:
+                        specs = get_specs_amazon(driver, l)
+                        if "Modelnummer item" in specs:
+                            amazon_model.append(specs.get("Modelnummer item"))
+                except:
+                    print("Selenium ran out of memory, too much clicking")
+                    driver.quit()
+                    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+                    driver.implicitly_wait(2)
+                    accept_cookies_wrap(driver)
+                    specs = get_specs_amazon(driver, i)
+                    if "Modelnummer item" in specs:
+                        amazon_model.append(specs.get("Modelnummer item"))
+
+            elif "bol" in i:
                 specs = handle_bol(driver,i)
                 if "MPN (Manufacturer Part Number)" in specs:
                     bol_model.append(specs.get("MPN (Manufacturer Part Number)"))
                     #print(specs.get("MPN (Manufacturer Part Number)"))
         match = [i for i in bol_model if i in amazon_model]
         print(match)
+        print(f"{len(match)} MATCHES FROM {len(bol_model)} BOL MODELS AND {len(amazon_model)}  AMAZON MODELS")
             # Open the link in BS4 and get the details
             # Model number for now and up to 5 images as some model numbers have different last few digits.
             # So, we might have to compare model numbers and images to get the exact match
