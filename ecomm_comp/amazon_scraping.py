@@ -75,11 +75,14 @@ def get_all_clickables(l):
         return all_ids
     else:
         one_step = get_child(l, 'ul')
-        two_step = get_all_children_Tags(one_step)
-        all_ids = list()
-        for tag in two_step:
-            all_ids.append(tag.get('id'))
-        return all_ids
+        if one_step:
+            two_step = get_all_children_Tags(one_step)
+            all_ids = list()
+            for tag in two_step:
+                all_ids.append(tag.get('id'))
+            return all_ids
+        else:
+            return False
 
 
 def try_clicking(button, retry=0):
@@ -104,21 +107,25 @@ def get_all_link_combinations(driver, click_ids, num, max, past_clicks=None):
                 clicked.append(item)
             button = driver.find_element('id', id)
             clicked.append(button)
-            try_clicking(button)
             links_from_child = get_all_link_combinations(driver, click_ids, num + 1, max, clicked)
             main_links.update(links_from_child)
         return main_links
     else:
+        for past_button in past_clicks:
+            try_clicking(past_button)
+        html_soup = BeautifulSoup(driver.page_source, 'html.parser')
+        soup = BeautifulSoup(str(html_soup), features='lxml')
         option = click_ids[max]
+        time.sleep(2)
         for id in option:
-            for past_button in past_clicks:
-                try_clicking(past_button)
-
-            button = driver.find_element('id', id)
-            try_clicking(button)
-            time.sleep(2.5)
-            url = str(driver.current_url)
-            main_links.add(url)
+            el = soup.find(id=id)
+            availability = el.get('class')[0]
+            if "Unavailable" not in availability:
+                button = driver.find_element('id', id)
+                try_clicking(button)
+                time.sleep(2)
+                url = str(driver.current_url)
+                main_links.add(url)
         return main_links
 
 
@@ -140,10 +147,14 @@ def get_all_links(driver, link):
     click_ids = []
     for l in lists:
         click_ids.append(get_all_clickables(l))
-    click_ids.sort(key=len)
-    final_links = get_all_link_combinations(driver, click_ids, 0, len(click_ids) - 1)
-    print(len(final_links))
-    return final_links
+    click_ids = [i for i in click_ids if i is not False]
+    if len(click_ids) == 0:
+        return [link]
+    else:
+        click_ids.sort(key=len)
+        final_links = get_all_link_combinations(driver, click_ids, 0, len(click_ids) - 1)
+        print(len(final_links))
+        return final_links
 
 
 def get_dict_input(tag):

@@ -35,32 +35,37 @@ for filename in files:
         accept_cookies_wrap(driver)
         # Get the link column of the file(s)
         links = df.link
-        bol_model = []
-        amazon_model = []
+        bol_model = {}
+        amazon_model = {}
         for i in links:
             print(i)
             if i == "No link found":
                 continue
             if "amazon" in i:
-                try:
+                #try:
                     all_links = get_all_links(driver, i)
                     for l in all_links:
                         specs = get_specs_amazon(driver, l)
                         if "Modelnummer item" in specs:
-                            amazon_model.append(specs.get("Modelnummer item"))
-                except:
-                    print("Selenium ran out of memory, restarting browser, skipping link")
-                    driver.quit()
-                    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-                    driver.implicitly_wait(2)
-                    accept_cookies_wrap(driver)
+                            amazon_model[(specs.get("Modelnummer item"))] = l
+               # except:
+                    #print("Selenium ran out of memory, restarting browser, skipping link")
+                    #driver.quit()
+                    #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+                    #driver.implicitly_wait(2)
+                    #accept_cookies_wrap(driver)
             elif "bol" in i:
                 specs = get_specs_bol(driver, i)
                 if "MPN (Manufacturer Part Number)" in specs:
-                    bol_model.append(specs.get("MPN (Manufacturer Part Number)"))
+                    bol_model[(specs.get("MPN (Manufacturer Part Number)"))] = i
 
-        match = [i for i in bol_model if i in amazon_model]
-        print(match)
+        match = [i for i in list(bol_model.keys()) if i in list(amazon_model.keys())]
+        #print(match)
+        csv_data = []
+        for m in match:
+                csv_data.append([bol_model.get(m),amazon_model.get(m)])
+        df = pd.DataFrame(data=csv_data,columns=["Bol link","Amazon link"])
+        df.to_csv(filename.replace(".csv","_matchings.csv"),index=False)
         print(f"{len(match)} MATCHES FROM {len(bol_model)} BOL MODELS AND {len(amazon_model)}  AMAZON MODELS")
 
     break
