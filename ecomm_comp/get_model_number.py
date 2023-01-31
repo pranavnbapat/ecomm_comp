@@ -4,7 +4,7 @@ from scraping_general import accept_cookies_wrap
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-from bol_scraping import get_specs_bol
+from bol_scraping import get_specs_bol, get_all_links_bol
 from amazon_scraping import get_specs_amazon, get_all_links
 
 # Sometimes, user agent versions give errors, try changing them if you face errors such as connection aborted
@@ -41,7 +41,7 @@ for filename in files:
             print(i)
             if i == "No link found":
                 continue
-            if "amazon" in i:
+            if "amazosdasdn" in i:
                 #try:
                     all_links = get_all_links(driver, i)
                     for l in all_links:
@@ -55,17 +55,22 @@ for filename in files:
                     #driver.implicitly_wait(2)
                     #accept_cookies_wrap(driver)
             elif "bol" in i:
-                specs = get_specs_bol(driver, i)
-                if "MPN (Manufacturer Part Number)" in specs:
-                    bol_model[(specs.get("MPN (Manufacturer Part Number)"))] = i
+                links = get_all_links_bol(driver,i)
+                #specs = get_specs_bol(driver, i)
+               # if "MPN (Manufacturer Part Number)" in specs:
+                #    bol_model[(specs.get("MPN (Manufacturer Part Number)"))] = i
 
         match = [i for i in list(bol_model.keys()) if i in list(amazon_model.keys())]
+        reverse_match = [i for i in list(bol_model.keys()) if i not in match]
+        reverse_match = [bol_model.get(i) for i in reverse_match]
         #print(match)
         csv_data = []
         for m in match:
                 csv_data.append([bol_model.get(m),amazon_model.get(m)])
         df = pd.DataFrame(data=csv_data,columns=["Bol link","Amazon link"])
         df.to_csv(filename.replace(".csv","_matchings.csv"),index=False)
+        df_reverse = pd.DataFrame(data = reverse_match,columns=["Failed_links"])
+        df_reverse.to_csv(filename.replace(".csv","_failed_matchings.csv"),index=False)
         print(f"{len(match)} MATCHES FROM {len(bol_model)} BOL MODELS AND {len(amazon_model)}  AMAZON MODELS")
 
     break
