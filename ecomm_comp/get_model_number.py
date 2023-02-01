@@ -37,11 +37,12 @@ for filename in files:
         links = df.link
         bol_model = {}
         amazon_model = {}
+        accept_cookies_wrap(driver)
         for i in links:
             print(i)
             if i == "No link found":
                 continue
-            if "amazosdasdn" in i:
+            if "amazon" in i:
                 #try:
                     all_links = get_all_links(driver, i)
                     for l in all_links:
@@ -56,9 +57,11 @@ for filename in files:
                     #accept_cookies_wrap(driver)
             elif "bol" in i:
                 links = get_all_links_bol(driver,i)
-                #specs = get_specs_bol(driver, i)
-               # if "MPN (Manufacturer Part Number)" in specs:
-                #    bol_model[(specs.get("MPN (Manufacturer Part Number)"))] = i
+                print(len(links))
+                for l in links:
+                    specs = get_specs_bol(driver, l)
+                    if "MPN (Manufacturer Part Number)" in specs:
+                        bol_model[(specs.get("MPN (Manufacturer Part Number)"))] = i
 
         match = [i for i in list(bol_model.keys()) if i in list(amazon_model.keys())]
         reverse_match = [i for i in list(bol_model.keys()) if i not in match]
