@@ -5,3 +5,5 @@ main.py
 *.csv
 data
 __pycache__
+pretrained_models
+*.vec
