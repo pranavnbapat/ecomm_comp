@@ -47,13 +47,7 @@ for i in range(1, 201):
         if product_price:
             product = tag.find("a", attrs={"class": "product-title"}).get_text().encode("ascii", "ignore").decode(
                 "utf-8")
-            # if check_words_in_string(product, search_term):
-            price = product_price.get_text().replace('\n', '').replace(' ', '.')
-            price = re.sub(r'[^\d.]', '', price)
-            price = re.sub(r'(\.){2,}', '.', price)
-            if "." in price and not any(char.isdigit() for char in price.split(".")[-1]):
-                price += "00"
-            prices.append(str(price))
+            prices.append(str(product_price.get_text()))
 
             products.append(product)
             source.append("bol")
@@ -77,26 +71,21 @@ for i in range(1, 20):
 
     for tag in soup.find_all("div", attrs={"data-component-type": "s-search-result"}):
         if tag.find("span", attrs={"class": "a-price-whole"}):
-            product = tag.find("h2",
-                               attrs={"class": "a-size-mini a-spacing-none a-color-base s-line-clamp-4"}).get_text()
-            # if check_words_in_string(product, search_term):
             price = tag.find("span", attrs={"class": "a-price-whole"}).get_text()
-            prices.append(str(price))
-            source.append("amazon")
-            # for product in tag.find_all(
-            #         "h2",
-            #         attrs={"class": "a-size-mini a-spacing-none a-color-base s-line-clamp-4"}
-            # ):
-                # for product_name2 in product_name.find_all("h2"):
-            products.append(product)
+            if price:
+                prices.append(str(price))
+                source.append("amazon")
+                product = tag.find("h2",
+                                   attrs={"class": "a-size-mini a-spacing-none a-color-base s-line-clamp-4"}).get_text()\
+                    .encode("ascii", "ignore").decode("utf-8")
+                products.append(product)
 
-            # For product link
-            for product_link in tag.find_all("a", attrs={"class": "a-link-normal s-no-outline"}):
-                links.append("https://www.amazon.nl" + product_link['href'])
+                # For product link
+                for product_link in tag.find_all("a", attrs={"class": "a-link-normal s-no-outline"}):
+                    links.append("https://www.amazon.nl" + product_link['href'])
 
-            # Get current timestamp
-            timestamp.append(str(datetime.now()))
-
+                # Get current timestamp
+                timestamp.append(str(datetime.now()))
 
 print(len(prices))
 print(len(source))
@@ -107,7 +96,12 @@ print(len(links))
 df = pd.DataFrame(columns=["products", "prices", "source", "timestamp", "links"])
 pd.to_datetime(df.timestamp, format="%Y-%m-%d %H:%M:%S")
 df['products'] = products
+df['products'] = df['products'].apply(lambda x: re.sub(r'[^\w\s]', '', x))
+
 df['prices'] = prices
+df['prices'] = df['prices'].apply(lambda x: re.sub(r'[^\d.,]', '', x).replace(r'(\.){2,}', '.', x))
+
+
 df['links'] = links
 df['source'] = source
 df['timestamp'] = timestamp
