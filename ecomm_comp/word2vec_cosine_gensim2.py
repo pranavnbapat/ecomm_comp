@@ -1,11 +1,33 @@
+import time
+
 import numpy as np
 import gensim
+import pandas as pd
+from tqdm import tqdm
 
-def similarity(string1, string2):
-    # GoogleNews - vectors - negative300.bin
-    model = gensim.models.KeyedVectors.load_word2vec_format('pretrained_models/GoogleNews-vectors-negative300.bin',
+
+df = pd.read_csv("data/filtered.csv")
+
+df_amazon = df[df['source'] == "amazon"]
+df_bol = df[df['source'] == "bol"]
+
+new_df = pd.DataFrame(columns=["amazon_product", "bol_product", "amazon_price", "bol_price", "amazon_link", "bol_link",
+                               "similarity_score"])
+
+amazon_product = []
+bol_product = []
+amazon_price = []
+bol_price = []
+amazon_link = []
+bol_link = []
+similarity_score = []
+
+
+model = gensim.models.KeyedVectors.load_word2vec_format('pretrained_models/GoogleNews-vectors-negative300.bin',
                                                             binary=True)
 
+
+def similarity(string1, string2):
     tokens1 = string1.split()
     tokens2 = string2.split()
     vectors1 = np.zeros((len(tokens1), 300))
@@ -27,6 +49,24 @@ def similarity(string1, string2):
 
 strings = [("Samsung Galaxy Watch4 - Smartwatch Dames - 40mm - Pink gold", "Samsung Galaxy Watch4 Rose Gold - 40MM  ")]
 
-for string1, string2 in strings:
-    print("Similarity between '{}' and '{}': {:.3f}".format(string1, string2, similarity(string1, string2)))
 
+for index, value in tqdm(df_amazon.iterrows()):
+    for index2, value2 in df_bol.iterrows():
+        amazon_product.append(value["products"])
+        bol_product.append(value2["products"])
+        amazon_price.append(value["prices"])
+        bol_price.append(value2["prices"])
+        amazon_link.append(value["links"])
+        bol_link.append(value2["links"])
+        similarity_score.append(similarity(value["products"], value2["products"]))
+    time.sleep(0.1)
+
+new_df["amazon_product"] = amazon_product
+new_df["bol_product"] = bol_product
+new_df["amazon_price"] = amazon_price
+new_df["bol_price"] = bol_price
+new_df["amazon_link"] = amazon_link
+new_df["bol_link"] = bol_link
+new_df["similarity_score"] = similarity_score
+
+new_df.to_csv("data/similarity_score_word2vec_cosine_gensim2.csv", index=False)

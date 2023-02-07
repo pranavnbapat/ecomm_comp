@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-df = pd.read_csv("data/smartwatch_samsung_2023_01_05 15_23_45.csv")
+df = pd.read_csv("data/filtered.csv")
 
 df1 = df[df['source'] == "amazon"]
 df2 = df[df['source'] == "bol"]
@@ -12,8 +12,8 @@ df2 = df[df['source'] == "bol"]
 new_df = pd.DataFrame(columns=["product_amazon", "product_bol", "price_amazon", "price_bol", "similarity_score"])
 
 # Converting dataframe to list for processing
-source_amazon = df1['product'].to_list()
-source_bol = df2['product'].to_list()
+source_amazon = df1['products'].to_list()
+source_bol = df2['products'].to_list()
 
 # Using huggingface sentence transformer model
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
@@ -28,11 +28,11 @@ similarity_score_list = []
 
 for i, v1 in enumerate(source_amazon):
     for j, v2 in enumerate(source_bol):
-        if cosine_similarity(embeddings_amazon[i].reshape(1, -1), embeddings_bol[j].reshape(1, -1))[0][0] > 0.91:
+        if cosine_similarity(embeddings_amazon[i].reshape(1, -1), embeddings_bol[j].reshape(1, -1))[0][0] > 0.75:
             amazon_list.append(v1)
             bol_list.append(v2)
-            amazon_price_list.append(df1["price"].iloc[i])
-            bol_price_list.append(df2["price"].iloc[j])
+            amazon_price_list.append(df1["prices"].iloc[i])
+            bol_price_list.append(df2["prices"].iloc[j])
             similarity_score_list.append(cosine_similarity(
                 embeddings_amazon[i].reshape(1, -1), embeddings_bol[j].reshape(1, -1))[0][0])
 
@@ -42,8 +42,4 @@ new_df["product_bol"] = bol_list
 new_df["price_amazon"] = amazon_price_list
 new_df["price_bol"] = bol_price_list
 new_df["similarity_score"] = similarity_score_list
-new_df.to_csv("smartwatch_comparison.csv", index=False)
-
-
-# Using glove model
-
+new_df.to_csv("data/smartwatch_comparison.csv", index=False)
