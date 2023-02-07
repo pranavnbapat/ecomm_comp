@@ -7,3 +7,4 @@ data
 __pycache__
 pretrained_models
 *.vec
+fastText

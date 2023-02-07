@@ -4,7 +4,7 @@ import pandas as pd
 import fuzzywuzzy
 from fuzzywuzzy import fuzz
 
-df = pd.read_csv("data/samsung smartwatch_2023-02-05 01_02_55.csv")
+df = pd.read_csv("data/filtered.csv")
 df_amazon = df[df["source"] == "amazon"]
 df_bol = df[df["source"] == "bol"]
 
@@ -32,7 +32,7 @@ new_df["product_bol"] = bol_list
 # new_df["price_amazon"] = amazon_price_list
 # new_df["price_bol"] = bol_price_list
 new_df["similarity_score"] = similarity_score_list
-new_df.to_csv("data/comparison.csv", index=False)
+new_df.to_csv("data/fuzzy_comparison.csv", index=False)
 
 # similar_strings = [item2 for item1 in df_amazon['products'] for item2 in df_bol['products'] if fuzz.token_set_ratio(item1, item2) >= 70]
 # result = list(set(similar_strings))

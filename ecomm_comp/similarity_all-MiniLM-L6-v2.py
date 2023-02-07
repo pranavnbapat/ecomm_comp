@@ -42,4 +42,4 @@ new_df["product_bol"] = bol_list
 new_df["price_amazon"] = amazon_price_list
 new_df["price_bol"] = bol_price_list
 new_df["similarity_score"] = similarity_score_list
-new_df.to_csv("data/smartwatch_comparison.csv", index=False)
+new_df.to_csv("data/smartwatch_comparison_mini_LM_L6.csv", index=False)
