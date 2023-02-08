@@ -1,14 +1,18 @@
 import math
 import sys
-from tqdm import tqdm
+
 import pandas as pd
 import numpy as np
 from collections import Iterable
 
-df = pd.read_csv("data/filtered.csv")
 
-amazon_df = df[df["source"] == "amazon"]
-bol_df = df[df["source"] == "bol"]
+# documents
+doc1 = "Samsung Galaxy Watch4 Classic  Smartwatch heren  46mm  Silver"
+doc2 = "Samsung Galaxy Watch4 Classic Smartwatch Zwart Staal 46mm"
+doc3 = "Samsung Galaxy Watch5  Smartwatch  44 mm  Blue"
+
+# query string
+query = "Samsung Galaxy Watch 5 44mm Bluetooth  Smartwatch Blue"
 
 
 # term -frequenvy :word occurences in a document
@@ -23,6 +27,9 @@ def compute_tf(docs_list):
         idx = 0
         new_col = ["Term Frequency"]
         df.insert(loc=idx, column='Document', value=new_col)
+
+
+compute_tf([doc1, doc2, doc3])
 
 
 # Normalized Term Frequency
@@ -46,6 +53,9 @@ def compute_normalizedtf(documents):
     return tf_doc
 
 
+tf_doc = compute_normalizedtf([doc1, doc2, doc3])
+
+
 def inverseDocumentFrequency(term, allDocuments):
     numDocumentsWithThisTerm = 0
     for doc in range(0, len(allDocuments)):
@@ -65,6 +75,11 @@ def compute_idf(documents):
         for word in sentence:
             idf_dict[word] = inverseDocumentFrequency(word, documents)
     return idf_dict
+
+
+idf_dict = compute_idf([doc1, doc2, doc3])
+
+compute_idf([doc1, doc2, doc3])
 
 
 # tf-idf score across all docs for the query string("life learning")
@@ -89,8 +104,12 @@ def compute_tfidf_with_alldocs(documents, query):
     return tf_idf, df
 
 
+documents = [doc1, doc2, doc3]
+tf_idf, df = compute_tfidf_with_alldocs(documents, query)
+
+
 # Normalized TF for the query string("life learning")
-def compute_query_tf(query, list_of_docs=None):
+def compute_query_tf(query):
     query_norm_tf = {}
     tokens = query.split()
     for word in tokens:
@@ -98,14 +117,20 @@ def compute_query_tf(query, list_of_docs=None):
     return query_norm_tf
 
 
+query_norm_tf = compute_query_tf(query)
+
+
 # idf score for the query string("life learning")
-def compute_query_idf(query, list_of_docs):
+def compute_query_idf(query):
     idf_dict_qry = {}
     sentence = query.split()
-    documents = list_of_docs
+    documents = [doc1, doc2, doc3]
     for word in sentence:
         idf_dict_qry[word] = inverseDocumentFrequency(word ,documents)
     return idf_dict_qry
+
+
+idf_dict_qry = compute_query_idf(query)
 
 
 # tf-idf score for the query string("life learning")
@@ -115,6 +140,9 @@ def compute_query_tfidf(query):
     for word in sentence:
         tfidf_dict_qry[word] = query_norm_tf[word] * idf_dict_qry[word]
     return tfidf_dict_qry
+
+
+tfidf_dict_qry = compute_query_tfidf(query)
 
 
 def cosine_similarity(tfidf_dict_qry, df, query, doc_num):
@@ -154,69 +182,8 @@ def rank_similarity_docs(data):
     return cos_sim
 
 
-new_df = pd.DataFrame(columns=["amazon_product", "bol_product", "amazon_price", "bol_price", "amazon_link", "bol_link", "similarity_score"])
-amazon_products = []
-bol_products = []
-amazon_prices = []
-bol_prices = []
-amazon_links = []
-bol_links = []
-similarity_score = []
+similarity_docs = rank_similarity_docs(documents)
+doc_names = ["Document1", "Document2", "Document3"]
+print(doc_names)
+print(list(flatten(similarity_docs)))
 
-for index1, value1 in tqdm(amazon_df.iterrows()):
-    temp_max_score = 0
-    temp_amazon_product = ""
-    temp_bol_product = ""
-    temp_amazon_price = ""
-    temp_bol_price = ""
-    temp_amazon_link = ""
-    temp_bol_link = ""
-    flattened_list = ""
-    for index2, value2 in bol_df.iterrows():
-        query = value2["products"]
-        # list_of_docs = amazon_df["products"].to_list()
-        list_of_docs = [value1["products"]]
-
-        compute_tf(list_of_docs)
-
-        tf_doc = compute_normalizedtf(list_of_docs)
-
-        idf_dict = compute_idf(list_of_docs)
-        compute_idf(list_of_docs)
-
-        documents = list_of_docs
-        tf_idf, df = compute_tfidf_with_alldocs(documents, query)
-
-        query_norm_tf = compute_query_tf(query, list_of_docs)
-
-        idf_dict_qry = compute_query_idf(query, list_of_docs)
-
-        tfidf_dict_qry = compute_query_tfidf(query)
-
-        similarity_docs = rank_similarity_docs(documents)
-        # print(value1["products"], value1["prices"])
-        # print(value2["products"], value2["prices"])
-        # print(max(list(flatten(similarity_docs))))
-        flattened_list = list(flatten(similarity_docs))
-        print(value1["products"])
-        print(value2["products"])
-
-    if temp_max_score < float(flattened_list[0]):
-        temp_max_score = float(flattened_list[0])
-        amazon_products.append(value1["products"])
-        bol_products.append(value2["products"])
-        amazon_prices.append(value1["prices"])
-        bol_prices.append(value2["prices"])
-        amazon_links.append(value1["links"])
-        # bol_links.append(value2["links"])
-        similarity_score.append(temp_max_score)
-    sys.exit()
-
-new_df["amazon_product"] = amazon_products
-new_df["bol_product"] = bol_products
-new_df["amazon_price"] = amazon_prices
-new_df["bol_price"] = bol_prices
-new_df["amazon_link"] = amazon_links
-new_df["bol_link"] = bol_links
-new_df["similarity_score"] = similarity_score
-new_df.to_csv("data/tfidf_score.csv", index=False)
