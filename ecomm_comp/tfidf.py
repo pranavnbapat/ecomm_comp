@@ -1,8 +1,4 @@
 import math
-import sys
-import time
-
-from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from collections import Iterable
@@ -12,6 +8,8 @@ df = pd.read_csv("data/filtered.csv")
 amazon_df = df[df["source"] == "amazon"]
 bol_df = df[df["source"] == "bol"]
 
+amazon_df.reset_index(inplace=True, drop=True)
+bol_df.reset_index(inplace=True, drop=True)
 
 # term -frequenvy :word occurences in a document
 def compute_tf(docs_list):
@@ -92,7 +90,7 @@ def compute_tfidf_with_alldocs(documents, query):
 
 
 # Normalized TF for the query string("life learning")
-def compute_query_tf(query, list_of_docs=None):
+def compute_query_tf(query):
     query_norm_tf = {}
     tokens = query.split()
     for word in tokens:
@@ -173,55 +171,49 @@ amazon_links = []
 bol_links = []
 similarity_score = []
 
-for index1, value1 in tqdm(amazon_df.iterrows()):
-    temp_max_score = 0
-    temp_amazon_product = ""
-    temp_bol_product = ""
-    temp_amazon_price = ""
-    temp_bol_price = ""
-    temp_amazon_link = ""
-    temp_bol_link = ""
-    flattened_list = ""
-    for index2, value2 in bol_df.iterrows():
-        query = value2["products"]
-        # list_of_docs = amazon_df["products"].to_list()
-        list_of_docs = [value1["products"]]
 
-        compute_tf(list_of_docs)
+for index2, value2 in bol_df.iterrows():
+    query = value2["products"]
+    list_of_docs = amazon_df["products"].to_list()
+    # list_of_docs = [value2["products"]]
 
-        tf_doc = compute_normalizedtf(list_of_docs)
+    compute_tf(list_of_docs)
 
-        idf_dict = compute_idf(list_of_docs)
-        compute_idf(list_of_docs)
+    tf_doc = compute_normalizedtf(list_of_docs)
 
-        documents = list_of_docs
-        tf_idf, df = compute_tfidf_with_alldocs(documents, query)
+    idf_dict = compute_idf(list_of_docs)
+    compute_idf(list_of_docs)
 
-        query_norm_tf = compute_query_tf(query, list_of_docs)
+    documents = list_of_docs
+    tf_idf, df = compute_tfidf_with_alldocs(documents, query)
 
-        idf_dict_qry = compute_query_idf(query, list_of_docs)
+    query_norm_tf = compute_query_tf(query)
 
-        tfidf_dict_qry = compute_query_tfidf(query)
+    idf_dict_qry = compute_query_idf(query, list_of_docs)
 
-        # print(value2["products"])
-        similarity_docs = rank_similarity_docs(documents)
-        # print(value1["products"], value1["prices"])
-        # print(value2["products"], value2["prices"])
-        # print(max(list(flatten(similarity_docs))))
-        flattened_list = list(flatten(similarity_docs))
+    tfidf_dict_qry = compute_query_tfidf(query)
 
+    similarity_docs = rank_similarity_docs(documents)
 
-        if temp_max_score < flattened_list[0]:
-            temp_max_score = flattened_list[0]
-            amazon_products.append(value1["products"])
-            bol_products.append(value2["products"])
-            amazon_prices.append(value1["prices"])
-            bol_prices.append(value2["prices"])
-            amazon_links.append(value1["links"])
-            bol_links.append(value2["links"])
-            similarity_score.append(temp_max_score)
-    time.sleep(0.1)
+    flattened_list = list(flatten(similarity_docs))
+    # print(flattened_list)
+    # print(type(flattened_list))
+    if len(flattened_list) > 0:
+        max = flattened_list[0]
+        index = 0
+        for i in range(1, len(flattened_list)):
+            if flattened_list[i] > max:
+                max = flattened_list[i]
+                index = i
+        # print(f'Index of the maximum value is : {index}')
 
+        amazon_products.append(amazon_df["products"].iloc[index])
+        bol_products.append(value2["products"])
+        amazon_prices.append(amazon_df["prices"].iloc[36])
+        bol_prices.append(value2["prices"])
+        amazon_links.append(amazon_df["links"].iloc[36])
+        bol_links.append(value2["links"])
+        similarity_score.append(flattened_list[index])
 
 
 new_df["amazon_product"] = amazon_products
