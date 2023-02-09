@@ -1,5 +1,7 @@
 import math
 import sys
+import time
+
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
@@ -122,18 +124,22 @@ def cosine_similarity(tfidf_dict_qry, df, query, doc_num):
     qry_mod = 0
     doc_mod = 0
     tokens = query.split()
-
-    for keyword in tokens:
-        dot_product += tfidf_dict_qry[keyword] * df[keyword][df['doc'] == doc_num]
-        # ||Query||
-        qry_mod += tfidf_dict_qry[keyword] * tfidf_dict_qry[keyword]
-        # ||Document||
-        doc_mod += df[keyword][df['doc'] == doc_num] * df[keyword][df['doc'] == doc_num]
-    qry_mod = np.sqrt(qry_mod)
-    doc_mod = np.sqrt(doc_mod)
-    # implement formula
-    denominator = qry_mod * doc_mod
-    cos_sim = dot_product / denominator
+    cos_sim = 0
+    try:
+        for keyword in tokens:
+            dot_product += tfidf_dict_qry[keyword] * df[keyword][df['doc'] == doc_num]
+            # ||Query||
+            qry_mod += tfidf_dict_qry[keyword] * tfidf_dict_qry[keyword]
+            # ||Document||
+            doc_mod += df[keyword][df['doc'] == doc_num] * df[keyword][df['doc'] == doc_num]
+        qry_mod = np.sqrt(qry_mod)
+        doc_mod = np.sqrt(doc_mod)
+        # implement formula
+        denominator = qry_mod * doc_mod
+        cos_sim = dot_product / denominator
+    except Exception as e:
+        # print(e)
+        pass
 
     return cos_sim
 
@@ -149,8 +155,12 @@ def flatten(lis):
 
 def rank_similarity_docs(data):
     cos_sim =[]
-    for doc_num in range(0 , len(data)):
-        cos_sim.append(cosine_similarity(tfidf_dict_qry, df , query , doc_num).tolist())
+    try:
+        for doc_num in range(0 , len(data)):
+            cos_sim.append(cosine_similarity(tfidf_dict_qry, df , query , doc_num).tolist())
+    except Exception as e:
+        pass
+        # print(e)
     return cos_sim
 
 
@@ -193,24 +203,26 @@ for index1, value1 in tqdm(amazon_df.iterrows()):
 
         tfidf_dict_qry = compute_query_tfidf(query)
 
+        # print(value2["products"])
         similarity_docs = rank_similarity_docs(documents)
         # print(value1["products"], value1["prices"])
         # print(value2["products"], value2["prices"])
         # print(max(list(flatten(similarity_docs))))
         flattened_list = list(flatten(similarity_docs))
-        print(value1["products"])
-        print(value2["products"])
 
-    if temp_max_score < float(flattened_list[0]):
-        temp_max_score = float(flattened_list[0])
-        amazon_products.append(value1["products"])
-        bol_products.append(value2["products"])
-        amazon_prices.append(value1["prices"])
-        bol_prices.append(value2["prices"])
-        amazon_links.append(value1["links"])
-        # bol_links.append(value2["links"])
-        similarity_score.append(temp_max_score)
-    sys.exit()
+
+        if temp_max_score < flattened_list[0]:
+            temp_max_score = flattened_list[0]
+            amazon_products.append(value1["products"])
+            bol_products.append(value2["products"])
+            amazon_prices.append(value1["prices"])
+            bol_prices.append(value2["prices"])
+            amazon_links.append(value1["links"])
+            bol_links.append(value2["links"])
+            similarity_score.append(temp_max_score)
+    time.sleep(0.1)
+
+
 
 new_df["amazon_product"] = amazon_products
 new_df["bol_product"] = bol_products
