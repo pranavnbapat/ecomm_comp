@@ -33,7 +33,7 @@ links = []
 # sys.stdout.flush()
 # sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
 # for i in range(toolbar_width):
-
+start_time = time.time()
 for i in tqdm(range(1, 11)):
     try:
         url = f"https://www.bol.com/nl/nl/s/?searchtext={search_term}&page={i}"
@@ -124,3 +124,4 @@ Path("data").mkdir(parents=True, exist_ok=True)
 df.to_csv(f"data/{search_term.replace(' ', '_')}_{str(datetime.now()).replace(':', '_').split('.', 1)[0]}.csv",
           index=False)
 print("Results saved to CSV file inside 'data' folder")
+print("--- %s seconds ---" % (time.time() - start_time))
