@@ -26,13 +26,13 @@ my_headers = {
 }
 
 
-def get_ean(soup):
-    ean_tag = soup.find('dt', text=re.compile(r'\s*EAN\s*', re.IGNORECASE))
-    if ean_tag:
-        ean_value = ean_tag.find_next_sibling('dd').text.strip()
-        return ean_value
-    else:
-        return 'EAN not found'
+# def get_ean(soup):
+#     ean_tag = soup.find('dt', text=re.compile(r'\s*EAN\s*', re.IGNORECASE))
+#     if ean_tag:
+#         ean_value = ean_tag.find_next_sibling('dd').text.strip()
+#         return ean_value
+#     else:
+#         return 'EAN not found'
 
 
 def get_mpn(soup):
@@ -57,26 +57,26 @@ def get_amazon_model(soup):
             return 'Model number not found'
 
 
-def get_amazon_asin(soup):
-    asin_tag = soup.find('span', text=re.compile(r'ASIN\s*', re.IGNORECASE))
-    if asin_tag:
-        asin = asin_tag.find_next_sibling('span').text.strip()
-        return asin
-    else:
-        asin_tag = soup.find('th', text=re.compile(r'ASIN', re.IGNORECASE))
-        if asin_tag:
-            asin = asin_tag.find_next_sibling('td').text.strip()
-            return asin
-        else:
-            return 'ASIN not found'
-
-
-def get_amazon_part_no(soup):
-    part_no = soup.find('th', text=re.compile(r'Onderdeelnummer\s*', re.IGNORECASE))
-    if part_no:
-        return part_no.find_next_sibling('td').text.strip()
-    else:
-        return 'Part number not found'
+# def get_amazon_asin(soup):
+#     asin_tag = soup.find('span', text=re.compile(r'ASIN\s*', re.IGNORECASE))
+#     if asin_tag:
+#         asin = asin_tag.find_next_sibling('span').text.strip()
+#         return asin
+#     else:
+#         asin_tag = soup.find('th', text=re.compile(r'ASIN', re.IGNORECASE))
+#         if asin_tag:
+#             asin = asin_tag.find_next_sibling('td').text.strip()
+#             return asin
+#         else:
+#             return 'ASIN not found'
+#
+#
+# def get_amazon_part_no(soup):
+#     part_no = soup.find('th', text=re.compile(r'Onderdeelnummer\s*', re.IGNORECASE))
+#     if part_no:
+#         return part_no.find_next_sibling('td').text.strip()
+#     else:
+#         return 'Part number not found'
 
 
 def process_row(index, row):
@@ -87,29 +87,30 @@ def process_row(index, row):
         # response = requests.get(url, headers=my_headers)
         soup = BeautifulSoup(response.content, 'html.parser')
         # Call the get_ean and get_mpn functions
-        ean = get_ean(soup)
+        # ean = get_ean(soup)
         mpn = get_mpn(soup)
 
         # Add the results to the DataFrame
-        df.at[index, 'EAN'] = ean
-        df.at[index, 'MPN'] = mpn
+        # df.at[index, 'EAN'] = ean
+        df.at[index, 'model_no'] = mpn
         time.sleep(2)
     if row['source'] == 'amazon':
         url = row['links']
         session.headers.update(my_headers)
         response = session.get(url)
         # response = requests.get(url, headers=my_headers)
+        time.sleep(2)
         soup = BeautifulSoup(response.content, 'html.parser')
         # Call the get_ean and get_mpn functions
-        asin = get_amazon_asin(soup)
+        # asin = get_amazon_asin(soup)
         model = get_amazon_model(soup)
-        part_no = get_amazon_part_no(soup)
+        # part_no = get_amazon_part_no(soup)
 
         # Add the results to the DataFrame
-        df.at[index, 'MODEL'] = model
-        df.at[index, 'ASIN'] = asin
-        df.at[index, 'PART_NO'] = part_no
-        time.sleep(2)
+        df.at[index, 'model_no'] = model
+        # df.at[index, 'ASIN'] = asin
+        # df.at[index, 'PART_NO'] = part_no
+        # time.sleep(2)
 
 
 data_dir = 'data/clustered'
@@ -120,11 +121,11 @@ for filename in os.listdir(data_dir):
         df = pd.read_csv(filepath)
 
         # Create empty columns for EAN and MPN
-        df['EAN'] = ''
-        df['MPN'] = ''
-        df['MODEL'] = ''
-        df['ASIN'] = ''
-        df['PART_NO'] = ''
+        # df['EAN'] = ''
+        # df['MPN'] = ''
+        df['model_no'] = ''
+        # df['ASIN'] = ''
+        # df['PART_NO'] = ''
 
         # Create a list of rows to process
         rows_to_process = [(index, row) for index, row in df.iterrows()]

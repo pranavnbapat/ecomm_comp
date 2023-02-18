@@ -12,7 +12,7 @@ def get_specs_bol(driver, link):
             EC.presence_of_element_located((By.CLASS_NAME, "specs__list"))
         )
     except:
-        print("Could not find product information for this link")
+        # print("Could not find product information for this link")
         return {}
     html_soup = BeautifulSoup(driver.page_source, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')
@@ -27,7 +27,7 @@ def get_specs_bol(driver, link):
         all_rows = get_all_children_Tags(list)
         return get_specs_bol_from_rows(all_rows)
     else:
-        print("Could not find product information for this link")
+        # print("Could not find product information for this link")
         return {}
 def get_all_links_bol(driver, link):
     visited=list()
@@ -54,7 +54,7 @@ def get_all_links_from_website(driver,link):
             EC.presence_of_element_located((By.CLASS_NAME, "features.js_features"))
         )
     except:
-        print("No extra links found")
+        # print("No extra links found")
         return [link]
     html_soup = BeautifulSoup(driver.page_source, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')

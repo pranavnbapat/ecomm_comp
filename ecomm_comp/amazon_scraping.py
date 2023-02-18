@@ -26,7 +26,7 @@ def get_specs_amazon(driver, link):
             EC.presence_of_element_located((By.ID, "detailBullets_feature_div"))
         )
     except:
-        print("No product details found")
+        # print("No product details found")
         return {}
     html_soup = BeautifulSoup(driver.page_source, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')
@@ -137,7 +137,7 @@ def get_all_links(driver, link):
             EC.presence_of_element_located((By.ID, "twister_feature_div"))
         )
     except:
-        print("No extra links found")
+        # print("No extra links found")
         return [link]
     html_soup = BeautifulSoup(driver.page_source, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')
@@ -153,7 +153,7 @@ def get_all_links(driver, link):
     else:
         click_ids.sort(key=len)
         final_links = get_all_link_combinations(driver, click_ids, 0, len(click_ids) - 1)
-        print(len(final_links))
+        # print(len(final_links))
         return final_links
 
 

@@ -31,9 +31,6 @@ translator = deepl.Translator(auth_key)
 
 prod_list = ["garmin smartwatch", "apple smartwatch", "samsung smartwatch"]
 
-brand = "garmin"
-search_term = f"{brand} smartwatch"
-
 # Creating a session object for each iteration is resource-intensive and time-consuming.
 # By moving the session object outside of the for loop, you can reuse the same session object for multiple
 # requests and improve performance.
@@ -170,4 +167,3 @@ for pl in prod_list:
     new_df.to_csv(file_path, index=False)
     print(f"\nResults saved to CSV file: {file_path}")
     print("--- %s seconds ---" % (time.time() - start_time))
-

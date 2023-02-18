@@ -7,7 +7,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from bol_scraping import get_specs_bol, get_all_links_bol
 from amazon_scraping import get_specs_amazon, get_all_links
 
-path = "data"
+path = "data/clustered"
 extension = 'csv'
 
 files = glob.glob(path + "/*." + extension)
@@ -25,7 +25,7 @@ for filename in files:
         amazon_model = {}
         accept_cookies_wrap(driver)
         for i in links:
-            print(i)
+            # print(i)
             if i == "No link found":
                 continue
             if "amazon" in i:
@@ -36,7 +36,7 @@ for filename in files:
                             amazon_model[(specs.get("Modelnummer item"))] = l
             elif "bol" in i:
                 links = get_all_links_bol(driver,i)
-                print(len(links))
+                # print(len(links))
                 for l in links:
                     specs = get_specs_bol(driver, l)
                     if "MPN (Manufacturer Part Number)" in specs:
