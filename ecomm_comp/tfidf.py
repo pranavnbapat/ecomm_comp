@@ -1,15 +1,11 @@
 import math
+import sys
+
 import pandas as pd
 import numpy as np
 from collections import Iterable
+import os
 
-df = pd.read_csv("data/filtered.csv")
-
-amazon_df = df[df["source"] == "amazon"]
-bol_df = df[df["source"] == "bol"]
-
-amazon_df.reset_index(inplace=True, drop=True)
-bol_df.reset_index(inplace=True, drop=True)
 
 # term -frequenvy :word occurences in a document
 def compute_tf(docs_list):
@@ -162,65 +158,79 @@ def rank_similarity_docs(data):
     return cos_sim
 
 
-new_df = pd.DataFrame(columns=["amazon_product", "bol_product", "amazon_price", "bol_price", "amazon_link", "bol_link", "similarity_score"])
-amazon_products = []
-bol_products = []
-amazon_prices = []
-bol_prices = []
-amazon_links = []
-bol_links = []
-similarity_score = []
+# new_df = pd.DataFrame(columns=["amazon_product", "bol_product", "amazon_price", "bol_price", "amazon_link", "bol_link", "similarity_score"])
+#
+# df = pd.read_csv("data/filtered.csv")
 
+clustered_dir = 'data/clustered'
+for filename in os.listdir(clustered_dir):
+    amazon_products = []
+    bol_products = []
+    amazon_prices = []
+    bol_prices = []
+    amazon_links = []
+    bol_links = []
+    similarity_score = []
+    if filename.endswith('.csv'):
+        filepath = os.path.join(clustered_dir, filename)
+        df = pd.read_csv(filepath)
+        amazon_df = df[df["source"] == "amazon"]
+        bol_df = df[df["source"] == "bol"]
 
-for index2, value2 in bol_df.iterrows():
-    query = value2["products"]
-    list_of_docs = amazon_df["products"].to_list()
-    # list_of_docs = [value2["products"]]
+        amazon_df.reset_index(inplace=True, drop=True)
+        bol_df.reset_index(inplace=True, drop=True)
 
-    compute_tf(list_of_docs)
+        new_df = pd.DataFrame(columns=["amazon_product", "bol_product", "amazon_price", "bol_price", "amazon_link",
+                                       "bol_link", "similarity_score"])
 
-    tf_doc = compute_normalizedtf(list_of_docs)
+        for index2, value2 in bol_df.iterrows():
+            query = value2["products"]
+            list_of_docs = amazon_df["products"].to_list()
 
-    idf_dict = compute_idf(list_of_docs)
-    compute_idf(list_of_docs)
+            compute_tf(list_of_docs)
 
-    documents = list_of_docs
-    tf_idf, df = compute_tfidf_with_alldocs(documents, query)
+            tf_doc = compute_normalizedtf(list_of_docs)
 
-    query_norm_tf = compute_query_tf(query)
+            idf_dict = compute_idf(list_of_docs)
+            compute_idf(list_of_docs)
 
-    idf_dict_qry = compute_query_idf(query, list_of_docs)
+            documents = list_of_docs
+            tf_idf, df = compute_tfidf_with_alldocs(documents, query)
 
-    tfidf_dict_qry = compute_query_tfidf(query)
+            query_norm_tf = compute_query_tf(query)
 
-    similarity_docs = rank_similarity_docs(documents)
+            idf_dict_qry = compute_query_idf(query, list_of_docs)
 
-    flattened_list = list(flatten(similarity_docs))
-    # print(flattened_list)
-    # print(type(flattened_list))
-    if len(flattened_list) > 0:
-        max = flattened_list[0]
-        index = 0
-        for i in range(1, len(flattened_list)):
-            if flattened_list[i] > max:
-                max = flattened_list[i]
-                index = i
-        # print(f'Index of the maximum value is : {index}')
+            tfidf_dict_qry = compute_query_tfidf(query)
 
-        amazon_products.append(amazon_df["products"].iloc[index])
-        bol_products.append(value2["products"])
-        amazon_prices.append(amazon_df["prices"].iloc[36])
-        bol_prices.append(value2["prices"])
-        amazon_links.append(amazon_df["links"].iloc[36])
-        bol_links.append(value2["links"])
-        similarity_score.append(flattened_list[index])
+            similarity_docs = rank_similarity_docs(documents)
 
+            flattened_list = list(flatten(similarity_docs))
 
-new_df["amazon_product"] = amazon_products
-new_df["bol_product"] = bol_products
-new_df["amazon_price"] = amazon_prices
-new_df["bol_price"] = bol_prices
-new_df["amazon_link"] = amazon_links
-new_df["bol_link"] = bol_links
-new_df["similarity_score"] = similarity_score
-new_df.to_csv("data/tfidf_score.csv", index=False)
+            flattened_list = [np.nan if x != x else x for x in flattened_list]
+
+            if len(flattened_list) > 0:
+                max_index = np.nanargmax(flattened_list)
+                max_value = flattened_list[max_index]
+
+                amazon_products.append(amazon_df["products"].iloc[max_index])
+                bol_products.append(value2["products"])
+                amazon_prices.append(amazon_df["prices"].iloc[max_index])
+                bol_prices.append(value2["prices"])
+                amazon_links.append(amazon_df["links"].iloc[max_index])
+                bol_links.append(value2["links"])
+                similarity_score.append(flattened_list[max_index])
+
+                # new_df = new_df.append(new_row, ignore_index=True)
+
+                new_df["amazon_product"] = amazon_products
+                new_df["bol_product"] = bol_products
+                new_df["amazon_price"] = amazon_prices
+                new_df["bol_price"] = bol_prices
+                new_df["amazon_link"] = amazon_links
+                new_df["bol_link"] = bol_links
+                new_df["similarity_score"] = similarity_score
+                output_file = os.path.splitext(filepath)[0] + "_tfidf.csv"
+                new_df.to_csv(output_file, index=False)
+                print(f"Saved output to {output_file}")
+

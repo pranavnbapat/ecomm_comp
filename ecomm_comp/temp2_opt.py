@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from tqdm import tqdm
 import pandas as pd
@@ -6,14 +7,31 @@ from datetime import datetime
 import re
 import requests
 from bs4 import BeautifulSoup
-from core_functions import my_headers
 import deepl
 import threading
+from sklearn.cluster import KMeans
+
+# Pass headers
+# Sometimes, user agent versions give errors, try changing them if you face errors such as connection aborted
+my_headers = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36",
+    "Accept": "text/html,application/json,application/xhtml+xml,application/xml; q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "Cache-Control": "no-cache",
+    'Connection': 'keep-alive',
+    'Origin': 'https',
+    'Pragma': 'no-cache',
+    'Referer': 'https',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-origin'
+}
 
 auth_key = "d35a289e-47d2-a38e-09a7-f0de53284a56:fx"  # Replace with your key
 translator = deepl.Translator(auth_key)
 
-brand = "apple"
+prod_list = ["garmin smartwatch", "apple smartwatch", "samsung smartwatch"]
+
+brand = "garmin"
 search_term = f"{brand} smartwatch"
 
 # Creating a session object for each iteration is resource-intensive and time-consuming.
@@ -21,14 +39,8 @@ search_term = f"{brand} smartwatch"
 # requests and improve performance.
 session = requests.Session()
 
-prices = []
-products = []
-source = []
-timestamp = []
-links = []
 
-
-def scrape_bolcom():
+def scrape_bolcom(search_term):
     for i in tqdm(range(1, 11)):
         try:
             url = f"https://www.bol.com/nl/nl/s/?searchtext={search_term}&page={i}"
@@ -51,7 +63,7 @@ def scrape_bolcom():
             print(e)
 
 
-def scrape_amazonnl():
+def scrape_amazonnl(search_term):
     for i in tqdm(range(1, 21)):
         try:
             url = f"https://www.amazon.nl/s?k={re.sub(' ', '+', search_term)}&page={i}"
@@ -79,48 +91,83 @@ def scrape_amazonnl():
             print(e)
         time.sleep(0.1)
 
-start_time = time.time()
-t1 = threading.Thread(target=scrape_bolcom)
-t2 = threading.Thread(target=scrape_amazonnl)
 
-t1.start()
-t2.start()
+for pl in prod_list:
+    prices = []
+    products = []
+    source = []
+    timestamp = []
+    links = []
 
-t1.join()
-t2.join()
+    start_time = time.time()
+    t1 = threading.Thread(target=scrape_bolcom(pl))
+    t2 = threading.Thread(target=scrape_amazonnl(pl))
 
-print("Performing data cleaning operations...")
-df = pd.DataFrame(columns=["products", "prices", "source", "timestamp", "links"])
-df['products'] = products
-df['prices'] = prices
-df['links'] = links
-df['source'] = source
-df['timestamp'] = pd.to_datetime(timestamp, format="%Y-%m-%d %H:%M:%S")
+    t1.start()
+    t2.start()
 
-# Clean and preprocess the 'products' column
-df['products'] = df['products'].apply(lambda x: re.sub(r'[^\w\s]', '', str(x).strip()))
-# Filter the DataFrame by 'brand'
-df = df[df['products'].str.contains(brand, case=False)]
-# Remove duplicate rows
-df.drop_duplicates(subset='products', keep='first', inplace=True)
+    t1.join()
+    t2.join()
 
-# Strip leading and trailing whitespaces
-df['prices'] = df['prices'].str.strip()
-# Replace commas with periods
-df['prices'] = df['prices'].apply(lambda x: re.sub(",-", "", re.sub(" +", ",", re.sub("\n", "", str(x)))))
-df['prices'] = df['prices'].apply(lambda x: re.sub(r',', '.', str(x)))
-df['prices'] = df['prices'].astype(float)
-df['prices'] = df['prices'].round(2)
+    print("Performing data cleaning operations...")
+    df = pd.DataFrame(columns=["products", "prices", "source", "timestamp", "links"])
+    df['products'] = products
+    df['prices'] = prices
+    df['links'] = links
+    df['source'] = source
+    df['timestamp'] = pd.to_datetime(timestamp, format="%Y-%m-%d %H:%M:%S")
 
-# Translate to English
-df['products'] = df['products'].apply(lambda x: translator.translate_text(re.sub(r'[^\w\s]', '', str(x).strip()), target_lang="EN-GB"))
+    # Clean and preprocess the 'products' column
+    df['products'] = df['products'].apply(lambda x: re.sub(r'[^\w\s]', '', str(x).strip()))
+    # Filter the DataFrame by 'brand'
+    df = df[df['products'].str.contains(pl.split(" ")[0], case=False)]
+    # Remove duplicate rows
+    df.drop_duplicates(subset='products', keep='first', inplace=True)
 
-# Save the results to a CSV file
-folder = 'data'
-if not os.path.exists(folder):
-    os.makedirs(folder)
-file_name = f"{search_term.replace(' ', '_')}_{str(datetime.now()).replace(':', '_').split('.', 1)[0]}.csv"
-file_path = os.path.join(folder, file_name)
-df.to_csv(file_path, index=False)
-print(f"Results saved to CSV file: {file_path}")
-print("--- %s seconds ---" % (time.time() - start_time))
+    # Strip leading and trailing whitespaces
+    df["prices"] = df["prices"].apply(lambda x: re.sub(r'[^\d.,]+', '', x))
+    df['prices'] = df['prices'].apply(lambda x: re.sub(r',', '.', x))
+    df['prices'] = df['prices'].apply(lambda x: re.sub(r'\.(?=.*\.)', '', x))
+    df['prices'] = df['prices'].apply(lambda x: re.sub(r'^(\d{1,})(\d{2})$', r'\1.\2', x))
+    # df['prices'] = df['prices'].apply(lambda x: str(x).strip())
+    df['prices'] = df['prices'].astype(float)
+    df['prices'] = df['prices'].round(2)
+
+    # Translate to English
+    # df['products'] = df['products'].apply(lambda x: translator.translate_text(re.sub(r'[^\w\s]', '', str(x).strip()), target_lang="EN-GB"))
+
+    # Save the results to a CSV file
+    folder = 'data'
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    file_name = f"{pl.replace(' ', '_')}_{str(datetime.now()).replace(':', '_').split('.', 1)[0]}.csv"
+    file_path = os.path.join(folder, file_name)
+    df.to_csv(file_path, index=False)
+    print(f"\nResults saved to CSV file: {file_path}")
+    # print("--- %s seconds ---" % (time.time() - start_time))
+
+    print("Beginning clustering...")
+    prices = df[["prices"]]
+    kmeans = KMeans(n_clusters=3, init="k-means++", max_iter=300, n_init=10, random_state=0)
+    labels = kmeans.fit_predict(prices)
+
+    df['cluster'] = labels
+
+    cluster_0 = df[df['cluster'] == 0]
+    cluster_1 = df[df['cluster'] == 1]
+    cluster_2 = df[df['cluster'] == 2]
+
+    # clusters = input("Which clusters to consider for filtering criteria?")
+    # clusters_list = list(map(int, clusters.split()))
+
+    new_df = pd.concat([cluster_1, cluster_2])
+    new_df.sort_values(by=["products"])
+    cluster_folder = "data/clustered"
+    if not os.path.exists(cluster_folder):
+        os.makedirs(cluster_folder)
+    file_name = f"{pl.replace(' ', '_')}_{str(datetime.now()).replace(':', '_').split('.', 1)[0]}_clustered.csv"
+    file_path = os.path.join(cluster_folder, file_name)
+    new_df.to_csv(file_path, index=False)
+    print(f"\nResults saved to CSV file: {file_path}")
+    print("--- %s seconds ---" % (time.time() - start_time))
+
