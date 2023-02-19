@@ -29,7 +29,7 @@ my_headers = {
 auth_key = "d35a289e-47d2-a38e-09a7-f0de53284a56:fx"  # Replace with your key
 translator = deepl.Translator(auth_key)
 
-prod_list = ["garmin smartwatch", "apple smartwatch"]
+prod_list = ["garmin smartwatch"]
 
 # Creating a session object for each iteration is resource-intensive and time-consuming.
 # By moving the session object outside of the for loop, you can reuse the same session object for multiple
@@ -106,7 +106,7 @@ for pl in prod_list:
     t1.join()
     t2.join()
 
-    print("Performing data cleaning operations...")
+    print(f"\nPerforming data cleaning operations...")
     df = pd.DataFrame(columns=["products", "prices", "source", "timestamp", "links"])
     df['products'] = products
     df['prices'] = prices
@@ -122,16 +122,16 @@ for pl in prod_list:
     df.drop_duplicates(subset='products', keep='first', inplace=True)
 
     # Strip leading and trailing whitespaces
-    df["prices"] = df["prices"].apply(lambda x: re.sub(r'[^\d.,]+', '', x))
+    df["prices"] = df["prices"].apply(lambda x: re.sub(r'\s+(-|$)', lambda m: '' if m.group(1) == '-' else '.', str(x).strip()))
+    df["prices"] = df["prices"].apply(lambda x: re.sub(r'(?<=[a-zA-Z0-9])[ \n]+(?=[a-zA-Z0-9])', ',', x))
     df['prices'] = df['prices'].apply(lambda x: re.sub(r',', '.', x))
-    df['prices'] = df['prices'].apply(lambda x: re.sub(r'\.(?=.*\.)', '', x))
-    df['prices'] = df['prices'].apply(lambda x: re.sub(r'^(\d{1,})(\d{2})$', r'\1.\2', x))
-    # df['prices'] = df['prices'].apply(lambda x: str(x).strip())
+    df['prices'] = df['prices'].apply(lambda x: re.sub(r'(\d)\.(\d{3})\.(\d{2})', r'\1\2.\3', x))
     df['prices'] = df['prices'].astype(float)
     df['prices'] = df['prices'].round(2)
 
     # Translate to English
-    # df['products'] = df['products'].apply(lambda x: translator.translate_text(re.sub(r'[^\w\s]', '', str(x).strip()), target_lang="EN-GB"))
+    # df['products'] = df['products'].apply(lambda x: translator.translate_text(re.sub(r'[^\w\s]', '', str(x).strip()),
+    # target_lang="EN-GB"))
 
     # Save the results to a CSV file
     folder = 'data'
