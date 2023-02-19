@@ -29,7 +29,7 @@ my_headers = {
 auth_key = "d35a289e-47d2-a38e-09a7-f0de53284a56:fx"  # Replace with your key
 translator = deepl.Translator(auth_key)
 
-prod_list = ["garmin smartwatch", "apple smartwatch", "samsung smartwatch"]
+prod_list = ["garmin smartwatch", "apple smartwatch"]
 
 # Creating a session object for each iteration is resource-intensive and time-consuming.
 # By moving the session object outside of the for loop, you can reuse the same session object for multiple
