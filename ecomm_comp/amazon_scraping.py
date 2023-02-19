@@ -28,7 +28,7 @@ def get_specs_amazon(driver, link):
     driver.get(link)
     try:
 
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 2).until(
             EC.presence_of_element_located((By.ID, "detailBullets_feature_div"))
         )
     except:

@@ -12,7 +12,7 @@ def get_specs_bol(driver, link):
     """
     driver.get(link)
     try:
-        WebDriverWait(driver, 3).until(
+        WebDriverWait(driver, 2).until(
             EC.presence_of_element_located((By.CLASS_NAME, "specs__list"))
         )
     except:
@@ -126,8 +126,9 @@ def get_specs_bol_from_rows(rows):
     """
     returner = {}
     for r in rows:
-        title_elem, value_elem = r.find_all('div', recursive=False)
-        title = title_elem.contents[0].strip()
-        value = value_elem.contents[0].strip()
+        title_elem = get_child(r, 'dt')
+        value_elem = get_child(r, 'dd')
+        title = get_title_from_element_bol(title_elem)
+        value = get_title_from_element_bol(value_elem)
         returner[title] = value
     return returner
