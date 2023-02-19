@@ -3,7 +3,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-
+# I hope this is self-explanatory
 def get_child_Tag(element):
     for child in element.contents:
         if type(child) == Tag:
