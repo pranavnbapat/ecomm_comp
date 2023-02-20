@@ -9,7 +9,7 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 # get a list of all CSV files in the directory
-data_dir = "data"
+data_dir = "data/clustered"
 csv_files = [f for f in os.listdir(data_dir) if f.endswith(".csv")]
 
 # iterate over each CSV file
@@ -36,7 +36,7 @@ for file in csv_files:
     ax2.set_ylabel("Price")
     ax2.legend(loc="best")
 
-    fig.savefig(os.path.join(output_dir, file.replace(".csv", "_plots.jpg")))
+    fig.savefig(os.path.join(output_dir, file.replace(".csv", "_plot.jpg")))
     plt.close()
 
 

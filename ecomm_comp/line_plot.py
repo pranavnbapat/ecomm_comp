@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("data/filtered.csv")
+df = pd.read_csv("data/clustered/garmin_smartwatch_2023-02-19 10_01_24_clustered.csv")
 
 amazon_df = df[df["source"] == "amazon"]
 bol_df = df[df["source"] == "bol"]

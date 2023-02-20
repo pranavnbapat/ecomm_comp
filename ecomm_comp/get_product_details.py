@@ -25,22 +25,12 @@ my_headers = {
     'Sec-Fetch-Site': 'same-origin'
 }
 
-
-# def get_ean(soup):
-#     ean_tag = soup.find('dt', text=re.compile(r'\s*EAN\s*', re.IGNORECASE))
-#     if ean_tag:
-#         ean_value = ean_tag.find_next_sibling('dd').text.strip()
-#         return ean_value
-#     else:
-#         return 'EAN not found'
-
-
 def get_mpn(soup):
     mpn_tag = soup.find('dt', text=re.compile('MPN|Manufacturer', re.IGNORECASE))
     if mpn_tag:
         return mpn_tag.find_next_sibling('dd').text.strip()
     else:
-        return 'MPN not found'
+        return 'Model number not found'
 
 
 def get_amazon_model(soup):
@@ -55,28 +45,6 @@ def get_amazon_model(soup):
             return model
         else:
             return 'Model number not found'
-
-
-# def get_amazon_asin(soup):
-#     asin_tag = soup.find('span', text=re.compile(r'ASIN\s*', re.IGNORECASE))
-#     if asin_tag:
-#         asin = asin_tag.find_next_sibling('span').text.strip()
-#         return asin
-#     else:
-#         asin_tag = soup.find('th', text=re.compile(r'ASIN', re.IGNORECASE))
-#         if asin_tag:
-#             asin = asin_tag.find_next_sibling('td').text.strip()
-#             return asin
-#         else:
-#             return 'ASIN not found'
-#
-#
-# def get_amazon_part_no(soup):
-#     part_no = soup.find('th', text=re.compile(r'Onderdeelnummer\s*', re.IGNORECASE))
-#     if part_no:
-#         return part_no.find_next_sibling('td').text.strip()
-#     else:
-#         return 'Part number not found'
 
 
 def process_row(index, row):
@@ -136,5 +104,8 @@ for filename in os.listdir(data_dir):
             for future in as_completed(futures):
                 pass
 
+        # Data cleaning operations
+        df["model_no"] = df["model_no"].apply(lambda x: x.encode('ascii', 'ignore').decode())
+        df["model_no"] = df["model_no"].apply(lambda x: re.sub(r'[^\w\s-]', '', str(x).strip()))
         df.to_csv(filepath, index=False)
     sys.exit()
