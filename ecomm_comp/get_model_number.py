@@ -6,7 +6,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from bol_scraping import get_specs_bol, get_all_links_bol
 from amazon_scraping import get_specs_amazon, get_all_links
-from os.path import join
+from os.path import join,exists
 import os
 path_clustered = "data/clustered"
 extension = 'csv'
@@ -16,7 +16,7 @@ files = glob.glob(path_clustered + "/*." + extension)
 
 for filename in files:
     # If file(s) found
-    if filename:
+    if filename and not exists(filename.replace(path_clustered,path_matched)):
         df = pd.read_csv(filename, index_col=None)
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
         driver.implicitly_wait(2)
@@ -59,4 +59,4 @@ for filename in files:
         #df_reverse.to_csv(filename.replace(".csv","_failed_matchings.csv"),index=False)
         print(f"{len(match)} MATCHES FROM {len(bol_model)} BOL MODELS AND {len(amazon_model)}  AMAZON MODELS")
 
-    break
+

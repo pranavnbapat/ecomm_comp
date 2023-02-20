@@ -11,7 +11,7 @@ import pandas as pd
 import nltk
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
-
+from datetime import datetime
 path = "data"
 extension = 'csv'
 matched_path='data/matched'
@@ -30,7 +30,7 @@ my_headers = {
 }
 products_path = 'products'
 
-df_columns=['price','timestamp','name']
+df_columns=['bol_price','amazon_price','timestamp']
 
 def get_amazon_price(session,link):
     response = session.get(link, headers=my_headers)
@@ -59,7 +59,10 @@ def get_bol_price(session,link):
 def make_empty_df():
     df = pd.DataFrame(columns=df_columns)
     return df
-if __name__ == '__main__':
+def make_row_of_df(data):
+    df = pd.DataFrame(data=data,columns=df_columns)
+    return df
+def do_rounds():
     for file in files:
         file_products = file.replace(matched_path,products_path).replace('.csv','')
         print(file_products)
@@ -68,7 +71,31 @@ if __name__ == '__main__':
         else:
             os.makedirs(file_products)
             df = pd.read_csv(file)
-            length = len(df)
-            for i in range(length):
+            for i in range(len(df)):
                 frame = make_empty_df()
                 frame.to_csv(join(file_products,f"Product_{i}.csv"),index=False)
+    for file in files:
+        session = requests.Session()
+        df = pd.read_csv(file)
+        file_products = file.replace(matched_path, products_path).replace('.csv', '')
+        for i in range(len(df)):
+            df_file_path = join(file_products,f"Product_{i}.csv")
+
+            links = df.iloc[i]
+            bol_link = links['Bol link']
+            amazon_link = links['Amazon link']
+
+            bol_price=get_bol_price(session,bol_link)
+            amazon_price=get_amazon_price(session,amazon_link)
+            timestap=str(datetime.now())
+
+            data = [[bol_price,amazon_price,timestap]]
+
+            new_row = make_row_of_df(data)
+            old_df = pd.read_csv(df_file_path)
+            new_df = pd.concat([old_df,new_row])
+            new_df.to_csv(df_file_path,index=False)
+
+if __name__ == '__main__':
+    do_rounds()
+
