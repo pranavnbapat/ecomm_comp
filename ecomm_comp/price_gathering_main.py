@@ -12,6 +12,7 @@ import nltk
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from datetime import datetime
+from scraping_general import *
 path = "data"
 extension = 'csv'
 matched_path='data/matched'
@@ -32,30 +33,54 @@ products_path = 'products'
 
 df_columns=['bol_price','amazon_price','timestamp']
 
-def get_amazon_price(session,link):
+def get_amazon_price(session,link,retry=0):
+    if retry==5 :
+        return''
+    time.sleep(retry) # seems to not like being spammed with requests
     response = session.get(link, headers=my_headers)
+    if response.status_code == 200:
+        html_soup = BeautifulSoup(response.text, 'html.parser')
 
-    html_soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(str(html_soup), features='lxml')
 
-    soup = BeautifulSoup(str(html_soup), features='lxml')
-
-    price = soup.find("span", attrs={"class": "a-offscreen"})
-    text_price = price.text
-    if "€" in text_price:
-        return text_price.replace('€',"").replace(',','.')
+        price = soup.find("span", attrs={"class": "a-offscreen"})
+        price_dict = soup.find('div',attrs={"class":"a-section aok-hidden simpleBundleJavascriptParameters"})
+        #price_dict_text = str(get_child_Tag(price_dict).contents[0])
+       # all_items="can be found in price_dict_text but I think I dont need to use it as it doesnt give me more data"
+        try:
+            text_price = price.text
+        except:
+            b=2
+        if "€" in text_price:
+            return text_price.replace('€',"").replace(',','.')
+        else:
+            return ''
     else:
-        return ''
+        return get_amazon_price(session,link,retry+1)
 def get_bol_price(session,link):
     response = session.get(link, headers=my_headers)
     html_soup = BeautifulSoup(response.text, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')
-    price = soup.find("div", attrs={"class": "price-block__price"})
-    text = price.text.replace('-','').strip()
-    if '\n' in text:
-        double_price = text.split()
-        return '.'.join(double_price)
+    #price = soup.find("div", attrs={"class": "price-block__price"})
+    possible_data = soup.find('div',attrs={'data-test': "taxonomy_data"}).text
+    data = eval(possible_data.strip())
+    if data:
+        item_data = data['pdpTaxonomyObj']['productInfo'][0]
+        price = item_data['price']
+        title = item_data['title']
+        return price
     else:
-        return text
+        return ''
+    #
+    # try:
+    #     text = price.text.replace('-','').strip()
+    # except:
+    #     b=2
+    # if '\n' in text:
+    #     double_price = text.split()
+    #     return '.'.join(double_price)
+    # else:
+    #     return text
 def make_empty_df():
     df = pd.DataFrame(columns=df_columns)
     return df
@@ -98,4 +123,4 @@ def do_rounds():
 
 if __name__ == '__main__':
     do_rounds()
-
+    print('done')

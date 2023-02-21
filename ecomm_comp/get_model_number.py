@@ -58,5 +58,5 @@ for filename in files:
         #df_reverse = pd.DataFrame(data = reverse_match,columns=["Failed_links"])
         #df_reverse.to_csv(filename.replace(".csv","_failed_matchings.csv"),index=False)
         print(f"{len(match)} MATCHES FROM {len(bol_model)} BOL MODELS AND {len(amazon_model)}  AMAZON MODELS")
-
+        driver.close()
 
