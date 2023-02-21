@@ -1,0 +1,1 @@
+*/2 * * * * python3 ecomm_comp/price_gathering_main.py

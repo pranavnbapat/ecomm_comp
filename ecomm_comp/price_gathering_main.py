@@ -90,7 +90,7 @@ def make_row_of_df(data):
 def do_rounds():
     for file in files:
         file_products = file.replace(matched_path,products_path).replace('.csv','')
-        print(file_products)
+        #print(file_products)
         if exists(file_products):
             continue
         else:
@@ -122,5 +122,6 @@ def do_rounds():
             new_df.to_csv(df_file_path,index=False)
 
 if __name__ == '__main__':
+    print("starting rounds")
     do_rounds()
     print('done')

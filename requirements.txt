@@ -1,15 +1,14 @@
 python-dotenv
-pandas
-numpy
+numpy == 1.23.3
+pandas == 1.2.5
 bs4
 lxml
 requests
 matplotlib
 scikit-learn
-distance
-seaborn
-sentence-transformers
+#distance
+#sentence-transformers
 nltk
 scipy
-dotenv
 deepl
+python-crontab
