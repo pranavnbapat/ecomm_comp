@@ -1,18 +1,12 @@
 import glob
-import pandas as pd
-import sys
 from os.path import exists,join
-import collections as cl
 import os
 import requests
 import time
-import re
 import pandas as pd
-import nltk
-from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from datetime import datetime
-from scraping_general import *
+
 path = "data"
 extension = 'csv'
 matched_path='data/matched'
@@ -31,7 +25,7 @@ my_headers = {
 }
 products_path = 'products'
 
-df_columns=['bol_price','amazon_price','timestamp']
+df_columns=['bol_price','amazon_price','timestamp','bol_link','bol_title','amazon_link','amazon_title']
 
 def get_amazon_price(session,link,retry=0):
     if retry==5 :
@@ -44,17 +38,18 @@ def get_amazon_price(session,link,retry=0):
         soup = BeautifulSoup(str(html_soup), features='lxml')
 
         price = soup.find("span", attrs={"class": "a-offscreen"})
+        title = soup.find('meta',attrs={'name':'title'}).get('content')
         price_dict = soup.find('div',attrs={"class":"a-section aok-hidden simpleBundleJavascriptParameters"})
         #price_dict_text = str(get_child_Tag(price_dict).contents[0])
        # all_items="can be found in price_dict_text but I think I dont need to use it as it doesnt give me more data"
         try:
             text_price = price.text
         except:
-            b=2
+           b=2
         if "€" in text_price:
-            return text_price.replace('€',"").replace(',','.')
+            return text_price.replace('€',"").replace(',','.'),title
         else:
-            return ''
+            return text_price,title
     else:
         return get_amazon_price(session,link,retry+1)
 def get_bol_price(session,link):
@@ -68,9 +63,9 @@ def get_bol_price(session,link):
         item_data = data['pdpTaxonomyObj']['productInfo'][0]
         price = item_data['price']
         title = item_data['title']
-        return price
+        return price,title
     else:
-        return ''
+        return '',''
     #
     # try:
     #     text = price.text.replace('-','').strip()
@@ -110,12 +105,11 @@ def do_rounds():
             bol_link = links['Bol link']
             amazon_link = links['Amazon link']
 
-            bol_price=get_bol_price(session,bol_link)
-            amazon_price=get_amazon_price(session,amazon_link)
+            bol_price,bol_title=get_bol_price(session,bol_link)
+            amazon_price,amazon_title=get_amazon_price(session,amazon_link)
             timestap=str(datetime.now())
 
-            data = [[bol_price,amazon_price,timestap]]
-
+            data = [[bol_price,amazon_price,timestap,bol_link,bol_title,amazon_link,amazon_title]]
             new_row = make_row_of_df(data)
             old_df = pd.read_csv(df_file_path)
             new_df = pd.concat([old_df,new_row])

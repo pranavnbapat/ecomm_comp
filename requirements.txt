@@ -4,11 +4,11 @@ pandas == 1.2.5
 bs4
 lxml
 requests
-matplotlib
-scikit-learn
+#matplotlib
+#scikit-learn
 #distance
 #sentence-transformers
-nltk
-scipy
-deepl
+#nltk
+#scipy
+#deepl
 python-crontab
