@@ -6,13 +6,8 @@ import time
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime
-<<<<<<< HEAD
-from scraping_general import *
-path = "data/clustered"
-=======
 
 path = "data"
->>>>>>> fea0988c068e01c8d078796f640a20fdd1439559
 extension = 'csv'
 matched_path = 'data/matched'
 files = glob.glob(matched_path + "/*." + extension)
@@ -30,23 +25,13 @@ my_headers = {
 }
 products_path = 'products'
 
-<<<<<<< HEAD
-df_columns = ['bol_price', 'amazon_price', 'timestamp']
-
-
-def get_amazon_price(session,link,retry=0):
-    if retry == 5:
-        return''
-    time.sleep(retry) # seems to not like being spammed with requests
-=======
-df_columns = ['price', 'timestamp', 'link', 'title']
+df_columns = ['price', 'source','timestamp', 'link', 'title']
 
 
 def get_amazon_price(session, link, retry=0):
     if retry == 5:
         return ''
     time.sleep(retry)  # seems to not like being spammed with requests
->>>>>>> fea0988c068e01c8d078796f640a20fdd1439559
     response = session.get(link, headers=my_headers)
     if response.status_code == 200:
         html_soup = BeautifulSoup(response.text, 'html.parser')
@@ -131,7 +116,7 @@ def do_rounds():
                 session = requests.Session()
             timestamp = str(datetime.now())
 
-            data = [[bol_price, timestamp, bol_link, bol_title],[amazon_price,timestamp, amazon_link, amazon_title]]
+            data = [[bol_price,'Bol', timestamp, bol_link, bol_title],[amazon_price,'Amazon',timestamp, amazon_link, amazon_title]]
             new_row = make_row_of_df(data)
             old_df = pd.read_csv(df_file_path)
             new_df = pd.concat([old_df, new_row])
