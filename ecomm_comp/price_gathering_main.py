@@ -13,9 +13,9 @@ from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from datetime import datetime
 from scraping_general import *
-path = "data"
+path = "data/clustered"
 extension = 'csv'
-matched_path='data/matched'
+matched_path = 'data/matched'
 files = glob.glob(matched_path + "/*." + extension)
 my_headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36",
@@ -31,10 +31,11 @@ my_headers = {
 }
 products_path = 'products'
 
-df_columns=['bol_price','amazon_price','timestamp']
+df_columns = ['bol_price', 'amazon_price', 'timestamp']
+
 
 def get_amazon_price(session,link,retry=0):
-    if retry==5 :
+    if retry == 5:
         return''
     time.sleep(retry) # seems to not like being spammed with requests
     response = session.get(link, headers=my_headers)
