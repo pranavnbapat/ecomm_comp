@@ -1,1 +1,1 @@
-*/2 * * * * python3 ecomm_comp/price_gathering_main.py
+0 */3 * * * cd .. && cd .. && cd ecomm_comp && python price_gathering_main.py

@@ -6,7 +6,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from bol_scraping import get_specs_bol, get_all_links_bol
 from amazon_scraping import get_specs_amazon, get_all_links
-from os.path import join,exists
+from os.path import exists
 import os
 path_clustered = "data/clustered"
 extension = 'csv'
@@ -28,7 +28,6 @@ for filename in files:
         accept_cookies_wrap(driver)
         already_visited = set()
         for i in links:
-            # print(i)
             if i == "No link found" or i in already_visited:
                 continue
             if "amazon" in i:

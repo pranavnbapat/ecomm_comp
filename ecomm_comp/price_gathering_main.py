@@ -1,19 +1,18 @@
 import glob
-import pandas as pd
-import sys
-from os.path import exists,join
-import collections as cl
+from os.path import exists, join
 import os
 import requests
 import time
-import re
 import pandas as pd
-import nltk
-from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from datetime import datetime
+<<<<<<< HEAD
 from scraping_general import *
 path = "data/clustered"
+=======
+
+path = "data"
+>>>>>>> fea0988c068e01c8d078796f640a20fdd1439559
 extension = 'csv'
 matched_path = 'data/matched'
 files = glob.glob(matched_path + "/*." + extension)
@@ -31,6 +30,7 @@ my_headers = {
 }
 products_path = 'products'
 
+<<<<<<< HEAD
 df_columns = ['bol_price', 'amazon_price', 'timestamp']
 
 
@@ -38,6 +38,15 @@ def get_amazon_price(session,link,retry=0):
     if retry == 5:
         return''
     time.sleep(retry) # seems to not like being spammed with requests
+=======
+df_columns = ['price', 'timestamp', 'link', 'title']
+
+
+def get_amazon_price(session, link, retry=0):
+    if retry == 5:
+        return ''
+    time.sleep(retry)  # seems to not like being spammed with requests
+>>>>>>> fea0988c068e01c8d078796f640a20fdd1439559
     response = session.get(link, headers=my_headers)
     if response.status_code == 200:
         html_soup = BeautifulSoup(response.text, 'html.parser')
@@ -45,53 +54,51 @@ def get_amazon_price(session,link,retry=0):
         soup = BeautifulSoup(str(html_soup), features='lxml')
 
         price = soup.find("span", attrs={"class": "a-offscreen"})
-        price_dict = soup.find('div',attrs={"class":"a-section aok-hidden simpleBundleJavascriptParameters"})
-        #price_dict_text = str(get_child_Tag(price_dict).contents[0])
-       # all_items="can be found in price_dict_text but I think I dont need to use it as it doesnt give me more data"
+        title = soup.find('meta', attrs={'name': 'title'}).get('content')
+        price_dict = soup.find('div', attrs={"class": "a-section aok-hidden simpleBundleJavascriptParameters"})
+        # price_dict_text = str(get_child_Tag(price_dict).contents[0])
+        # all_items="can be found in price_dict_text but I think I dont need to use it as it doesnt give me more data"
         try:
             text_price = price.text
         except:
-            b=2
+            return '', title
         if "€" in text_price:
-            return text_price.replace('€',"").replace(',','.')
+            return text_price.replace('€', "").replace(',', '.'), title
         else:
-            return ''
+            return text_price, title
     else:
-        return get_amazon_price(session,link,retry+1)
-def get_bol_price(session,link):
+        return get_amazon_price(session, link, retry + 1)
+
+
+def get_bol_price(session, link):
     response = session.get(link, headers=my_headers)
     html_soup = BeautifulSoup(response.text, 'html.parser')
     soup = BeautifulSoup(str(html_soup), features='lxml')
-    #price = soup.find("div", attrs={"class": "price-block__price"})
-    possible_data = soup.find('div',attrs={'data-test': "taxonomy_data"}).text
+    # price = soup.find("div", attrs={"class": "price-block__price"})
+    possible_data = soup.find('div', attrs={'data-test': "taxonomy_data"}).text
     data = eval(possible_data.strip())
     if data:
         item_data = data['pdpTaxonomyObj']['productInfo'][0]
         price = item_data['price']
         title = item_data['title']
-        return price
+        return price, title
     else:
-        return ''
-    #
-    # try:
-    #     text = price.text.replace('-','').strip()
-    # except:
-    #     b=2
-    # if '\n' in text:
-    #     double_price = text.split()
-    #     return '.'.join(double_price)
-    # else:
-    #     return text
+        return '', ''
+
+
 def make_empty_df():
     df = pd.DataFrame(columns=df_columns)
     return df
+
+
 def make_row_of_df(data):
-    df = pd.DataFrame(data=data,columns=df_columns)
+    df = pd.DataFrame(data=data, columns=df_columns)
     return df
+
+
 def do_rounds():
     for file in files:
-        file_products = file.replace(matched_path,products_path).replace('.csv','')
-        #print(file_products)
+        file_products = file.replace(matched_path, products_path).replace('.csv', '')
         if exists(file_products):
             continue
         else:
@@ -99,28 +106,37 @@ def do_rounds():
             df = pd.read_csv(file)
             for i in range(len(df)):
                 frame = make_empty_df()
-                frame.to_csv(join(file_products,f"Product_{i}.csv"),index=False)
+                frame.to_csv(join(file_products, f"Product_{i}.csv"), index=False)
     for file in files:
         session = requests.Session()
         df = pd.read_csv(file)
         file_products = file.replace(matched_path, products_path).replace('.csv', '')
         for i in range(len(df)):
-            df_file_path = join(file_products,f"Product_{i}.csv")
+            df_file_path = join(file_products, f"Product_{i}.csv")
 
             links = df.iloc[i]
             bol_link = links['Bol link']
             amazon_link = links['Amazon link']
+            try:
+                bol_price, bol_title = get_bol_price(session, bol_link)
+            except:
+                bol_price = ''
+                bol_title = ''
+                session = requests.Session()
+            try:
+                amazon_price, amazon_title = get_amazon_price(session, amazon_link)
+            except:
+                amazon_price = ''
+                amazon_title = ''
+                session = requests.Session()
+            timestamp = str(datetime.now())
 
-            bol_price=get_bol_price(session,bol_link)
-            amazon_price=get_amazon_price(session,amazon_link)
-            timestap=str(datetime.now())
-
-            data = [[bol_price,amazon_price,timestap]]
-
+            data = [[bol_price, timestamp, bol_link, bol_title],[amazon_price,timestamp, amazon_link, amazon_title]]
             new_row = make_row_of_df(data)
             old_df = pd.read_csv(df_file_path)
-            new_df = pd.concat([old_df,new_row])
-            new_df.to_csv(df_file_path,index=False)
+            new_df = pd.concat([old_df, new_row])
+            new_df.to_csv(df_file_path, index=False)
+
 
 if __name__ == '__main__':
     print("starting rounds")
