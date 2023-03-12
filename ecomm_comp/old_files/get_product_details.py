@@ -81,7 +81,7 @@ def process_row(index, row):
         # time.sleep(2)
 
 
-data_dir = 'data/clustered'
+data_dir = '../data/clustered'
 
 for filename in os.listdir(data_dir):
     if filename.endswith('.csv'):

@@ -162,7 +162,7 @@ def rank_similarity_docs(data):
 #
 # df = pd.read_csv("data/filtered.csv")
 
-clustered_dir = 'data/clustered'
+clustered_dir = '../data/clustered'
 for filename in os.listdir(clustered_dir):
     amazon_products = []
     bol_products = []

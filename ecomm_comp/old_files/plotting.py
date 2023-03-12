@@ -9,7 +9,7 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 # get a list of all CSV files in the directory
-data_dir = "data/clustered"
+data_dir = "../data/clustered"
 csv_files = [f for f in os.listdir(data_dir) if f.endswith(".csv")]
 
 # iterate over each CSV file

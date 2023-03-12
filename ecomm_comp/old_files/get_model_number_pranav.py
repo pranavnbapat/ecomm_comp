@@ -7,7 +7,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from bol_scraping import get_specs_bol, get_all_links_bol
 from amazon_scraping import get_specs_amazon, get_all_links
 
-path = "data/clustered"
+path = "../data/clustered"
 extension = 'csv'
 
 files = glob.glob(path + "/*." + extension)

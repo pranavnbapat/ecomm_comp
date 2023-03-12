@@ -79,7 +79,7 @@ def get_amazon_part_no(soup):
         return 'Part number not found'
 
 
-data_dir = 'data/clustered'
+data_dir = '../data/clustered'
 
 for filename in os.listdir(data_dir):
     if filename.endswith('.csv'):

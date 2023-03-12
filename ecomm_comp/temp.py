@@ -1,4 +1,3 @@
-import sys
 import time
 from tqdm import tqdm
 import pandas as pd
@@ -6,7 +5,7 @@ from datetime import datetime
 import re
 import requests
 from bs4 import BeautifulSoup
-from core_functions import my_headers
+from ecomm_comp.old_files.core_functions import my_headers
 from pathlib import Path
 import deepl
 

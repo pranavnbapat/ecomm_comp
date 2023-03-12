@@ -222,7 +222,7 @@ def save_data(product_list, price_list, link_list, source_list, timestamp_list, 
         df['price'] = df['price'].round(2)
 
         # Save CSV
-        Path("data").mkdir(parents=True, exist_ok=True)
+        Path("../data").mkdir(parents=True, exist_ok=True)
         df.to_csv(
             "data/smartwatch_" + brand_name + "_" +
             str(datetime.now()).replace(":", "_").replace("-", "_").split(".", 1)[0] + ".csv",

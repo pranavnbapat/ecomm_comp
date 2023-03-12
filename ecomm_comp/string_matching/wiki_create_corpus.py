@@ -18,7 +18,7 @@ wiki = wikipediaapi.Wikipedia(
         extract_format=wikipediaapi.ExtractFormat.WIKI
 )
 
-Path("corpus").mkdir(parents=True, exist_ok=True)
+Path("../corpus").mkdir(parents=True, exist_ok=True)
 print(len(subjects))
 text = ""
 for i in tqdm(subjects):
