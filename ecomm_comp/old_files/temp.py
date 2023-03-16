@@ -119,7 +119,7 @@ for index, value in df.iterrows():
     translated.append(translator.translate_text(output, target_lang="EN-GB"))
 df["products"] = translated
 
-Path("data").mkdir(parents=True, exist_ok=True)
+Path("../data").mkdir(parents=True, exist_ok=True)
 df.to_csv(f"data/{search_term.replace(' ', '_')}_{str(datetime.now()).replace(':', '_').split('.', 1)[0]}.csv",
           index=False)
 print("Results saved to CSV file inside 'data' folder")

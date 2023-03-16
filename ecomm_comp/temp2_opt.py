@@ -29,7 +29,7 @@ my_headers = {
 auth_key = "d35a289e-47d2-a38e-09a7-f0de53284a56:fx"  # Replace with your key
 translator = deepl.Translator(auth_key)
 
-prod_list = ["garmin smartwatch"]
+prod_list = ["samsung smartwatch"]
 
 # Creating a session object for each iteration is resource-intensive and time-consuming.
 # By moving the session object outside of the for loop, you can reuse the same session object for multiple
@@ -138,6 +138,7 @@ for pl in prod_list:
     if not os.path.exists(folder):
         os.makedirs(folder)
     file_name = f"{pl.replace(' ', '_')}_{str(datetime.now()).replace(':', '_').split('.', 1)[0]}.csv"
+    file_name = re.sub(r'[ -]+', '_', file_name)
     file_path = os.path.join(folder, file_name)
     df.to_csv(file_path, index=False)
     print(f"\nResults saved to CSV file: {file_path}")
@@ -163,6 +164,7 @@ for pl in prod_list:
     if not os.path.exists(cluster_folder):
         os.makedirs(cluster_folder)
     file_name = f"{pl.replace(' ', '_')}_{str(datetime.now()).replace(':', '_').split('.', 1)[0]}_clustered.csv"
+    file_name = re.sub(r'[ -]+', '_', file_name)
     file_path = os.path.join(cluster_folder, file_name)
     new_df.to_csv(file_path, index=False)
     print(f"\nResults saved to CSV file: {file_path}")

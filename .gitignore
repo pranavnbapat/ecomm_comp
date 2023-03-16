@@ -8,3 +8,4 @@ __pycache__
 pretrained_models
 *.vec
 fastText
+*.pem
