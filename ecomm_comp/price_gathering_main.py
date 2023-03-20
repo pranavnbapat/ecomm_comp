@@ -6,7 +6,8 @@ import time
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime
-
+import re
+prog = re.compile(r'\d*[.]\d*')
 path = "data"
 extension = 'csv'
 matched_path = 'data/matched'
@@ -114,8 +115,11 @@ def do_rounds():
                 amazon_price = ''
                 amazon_title = ''
                 session = requests.Session()
+            if not prog.match(amazon_price):
+                amazon_price=''
+            if not prog.match(bol_price):
+                bol_price=''
             timestamp = str(datetime.now())
-
             data = [[bol_price,'Bol', timestamp, bol_link, bol_title],[amazon_price,'Amazon',timestamp, amazon_link, amazon_title]]
             new_row = make_row_of_df(data)
             old_df = pd.read_csv(df_file_path)

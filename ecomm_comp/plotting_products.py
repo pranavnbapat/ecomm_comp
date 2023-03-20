@@ -66,12 +66,8 @@ def new_plotting():
 
             # create a box plot and line plot for the prices, grouped by source
             sns.lineplot(y="prices", data=df,x=df.index,hue='source').set(title='Price_comparison')
-
-
             # add text to the box plot to show the number of products from each source
-
             plt.legend(loc="best")
-
             plt.savefig(file_path.replace(products_dir,output_dir).replace(".csv", "_plot.jpg"))
 
             plt.close()
